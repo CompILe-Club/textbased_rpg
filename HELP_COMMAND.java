@@ -121,12 +121,9 @@ public class HELP_COMMAND implements Command {
     }
     
     //Iterate through the map and print all of the commands in the game.
+    //Iterate through the map and print all of the commands in the game.
     String listCommands(){
-        String list = "";
-        for (Iterator it = commands.keySet().iterator(); it.hasNext();) {
-            list += commands.get(it) + " ";
-            Object key = it.next();
-        }
+        String list = commands.keySet().toString();
         return list;
     }
 
