@@ -7,7 +7,6 @@ public class HELP_COMMAND implements Command {
     String input;
     //The list of commands in the game.
     Map commands = new HashMap();
-    //I don't really know what these do but the project leader will save me
     boolean tooltips;
     
     HELP_COMMAND(String cmd, boolean tt){
