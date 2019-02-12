@@ -21,12 +21,12 @@ public class HELP_COMMAND {
         if (commandSource.split(" ").length > 1){
             
             //Isolate the specific help command entered.
-            String command = commandSource.split(" ")[1];
+            String command = commandSource.split(" ")[0];
             
             //Check if the command entered is a sub-command of HELP
-            if (command.equals("TOOLTIPS")){
+            if (command.equalsIgnoreCase("TOOLTIPS")){
                 return toggleTooltips();
-            }else if (command.equals("LIST")){
+            }else if (command.equalsIgnoreCase("LIST")){
                 return listCommands();
             }
             
