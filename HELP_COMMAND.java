@@ -1,6 +1,5 @@
 import java.util.Map;
 import java.util.HashMap;
-import java.util.Iterator;
 
 public class HELP_COMMAND implements Command {
 
