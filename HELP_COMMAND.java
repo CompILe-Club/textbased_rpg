@@ -73,7 +73,11 @@ public class HELP_COMMAND implements Command {
                         "This includes their HP, MP, Active Quest, and Level.\n";
                 return help;
             case 1://Quest log
-                help = "QUEST tells the player about their current quest.\n";
+                help = "QUEST tells the player about their current quest.\n"
+                        + "QUEST commands include\n"
+                        + "QUEST LIST lists all of the current quest you have in your log.\n"
+                        + "QUEST COMPLETED lists all of the quest you have completed.\n"
+                        + "QUEST [quest name] outputs the details about a given quest.\n";
                 return help;
             case 2://Help
                 return helpList();
@@ -81,25 +85,44 @@ public class HELP_COMMAND implements Command {
                 help = "EXIT exits the game, after prompting the player if they're sure.\n";
                 return help;
             case 4://Inventory
-                help = "INVENTORY displays the contents of the player's inventory, and lets them manage it.\n";
+                help = "INVENTORY displays the contents of the player's inventory, and lets them manage it.\n"
+                        + "INVENTORY commands include\n"
+                        + "INVENTORY LIST lists off all of the current items in your inventory.\n"
+                        + "INVENTORY VIEW [item name] outpus the details about a given item.\n"
+                        + "INVENTORY USE [item name] allows you to use an item if it is useable.\n"
+                        + "INVENTORY DROP [item name] allows you to drop an item from your inventory.\n"
+                        + "INVENTORY EQUIP [item name] [slot id] allows you to equip an item that can be equipped.\n";
                 return help;
             case 5://Stance
-                help = "STANCE lets the player change their stance between ATTACK and DEFENSE.\n";
+                help = "STANCE lets the player change their stance between ATTACK and DEFENSE.\n"
+                        + "STANCE commands include\n"
+                        + "STANCE ATT switches your stance into attact stance.\n"
+                        + "STANCE DEF switches your stance into defense stance.\n"
+                        + "STANCE STATUS outputs your current stance.\n";
                 return help;
             case 6://Cast
-                help = "CAST [spell] casts the spell that the user invokes, if their character knows how to use it.\n";
+                help = "CAST casts the spell that the user invokes, if their character knows how to use it.\n"
+                        + "CAST commands include\n"
+                        + "CAST SPELLLIST outputs a list of spells your have both name and spell id.\n"
+                        + "CAST SPELL [spell id] cast a spell on your current locked target.\n"
+                        + "CAST SPELL [spell id] [target name] cast a spell on target.\n"
+                        + "CAST INFO [spell id] outputs details of a spell.\n";
                 return help;
             case 7://Lock Target
-                help = "LOCK [name of target] sets the player to aim at the specified target.\n";
+                help = "LOCK sets the player to aim at the specified target.\n"
+                        + "LOCK commands include\n"
+                        + "LOCK [target name] sets target to your current locked target.\n"
+                        + "LOCK NEXTENEMY set your locked target to the next enemy in the area.\n"
+                        + "LOCK NEXTFRIENDLY set your locked target to the next friendly in the area.\n";
                 return help;
             case 8://NPC
                 help = "NPC [action] lets the player interact with NPCs.\n" + 
                         "NPC TALK activates a dialogue sequence between the player and the NPC.\n" + 
                         "NPC SHOP lets the player buy from the NPC, if the option is available.\n";
                 return help;
-            case 9://Player
-                help = "TODO WHEN MULTIPLAYER\n";
-                return help;
+            //case 9://Player
+               // help = "TODO WHEN MULTIPLAYER\n";
+               // return help;
             default:
                 //Tell the user that the command they entered is invalid.
                 help = subCommand + " is not a valid command.\n\n" + helpList();
