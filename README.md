@@ -17,17 +17,14 @@ Project Components
         (2) View Item
         (3) Use Item
         (4) Drop Item
-    (F) Stance
-        (1) Attack
-        (2) Defensive
-    (G) Cast
-    (H) Lock Target
+    (F) Cast
+    (G) Lock Target
         (1) Primary Target
         (2) Secondary Target
-    (I) NPC
+    (H) NPC
         (1) Talk
         (2) Shop
-    (J) Player
+    (I) Player
         (A) Trade
         (B) Invite
 (III) Background Mechanics
