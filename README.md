@@ -21,9 +21,9 @@ Project Components
     (G) Lock Target
         (1) Primary Target
         (2) Secondary Target
-    (H) NPC
+    (H) NPC - Noah Rogers - In Progress
         (1) Talk
-        (2) Shop
+        (2) Shop - Mat Farley
     (I) Player
         (A) Trade
         (B) Invite
