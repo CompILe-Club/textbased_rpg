@@ -9,7 +9,7 @@ public class NPC_Class implements Lifeforms{
     private Item [] inventory;
     private final boolean shopKeeper;
     private final Quest[] linkedQuest;
-    private final Grid location;
+    private final int location;
     private final EquipableItem[] equipment;
     private final String[] dialogue; 
     private int health;
@@ -17,7 +17,7 @@ public class NPC_Class implements Lifeforms{
     private int level;
     
     NPC_Class(String fName, String lName, String description, int[] stats, String[] useableAction, Item[] inventory,
-    boolean shopKeeper, Quest[] linkedQuest, grid location, EquipableItem[] equipment, String[] dialogue, int health, int mana,
+    boolean shopKeeper, Quest[] linkedQuest, int location, EquipableItem[] equipment, String[] dialogue, int health, int mana,
     int level)
          {
              this.fName = fName;
@@ -103,7 +103,7 @@ public class NPC_Class implements Lifeforms{
     }
     
     @Override
-    public Grid getLocation() {
+    public int getLocation() {
         return location;
     }
 
