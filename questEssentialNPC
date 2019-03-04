@@ -1,0 +1,17 @@
+public class questEssentialNPC extends NPC_Class {
+    
+    //This ensures that NPC's who are important for quests cannot die until the quest is complete
+    
+    questEssentialNPC(String fName, String lName, String description, int[] stats, String[] useableAction, Item[] inventory,
+                    int location, EquipableItem[] equipment, String[] dialogue, int health, int mana,
+                    int level){
+        
+        super(fName, lName, description, stats, useableAction, inventory, location, 
+                equipment, dialogue, health, mana, level);
+        
+        // Find a way to link quest to this NPC and if the Quest finishes this.essential becomes false
+        this.essential = true;
+        
+        
+    }
+}
