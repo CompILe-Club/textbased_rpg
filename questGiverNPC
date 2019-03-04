@@ -1,0 +1,25 @@
+public class questgiverNPC extends NPC_Class {
+    
+    private Quest[] getLinkedQuest;
+    
+    //This basically just makes the Quest Giver NPC's unkillable until they run outta quests
+    
+    questgiverNPC(String fName, String lName, String description, int[] stats, String[] useableAction, Item[] inventory, Quest[] getLinkedQuest,
+                    int location, EquipableItem[] equipment, String[] dialogue, int health, int mana,
+                    int level) {
+        
+        
+               super(fName, lName, description, stats, useableAction, inventory, location, 
+                equipment, dialogue, health, mana, level);
+               
+               this.getLinkedQuest = getLinkedQuest;
+               if(getLinkedQuest.length < 1)
+                   this.essential = false;
+               else 
+                   this.essential = true;
+    }
+    
+     public Quest[] getLinkedQuest() {
+        return getLinkedQuest;
+    }   
+}
