@@ -2,7 +2,7 @@ public interface Lifeforms {
     
     abstract int [] getStats();
     abstract String getName();
-    abstract Grid getLocation();
+    abstract int getLocation();
     abstract Item[] getInventory();
     abstract int getHealth();
     abstract int getMana();
@@ -11,3 +11,4 @@ public interface Lifeforms {
     abstract int getLevel();
     
 }
+
