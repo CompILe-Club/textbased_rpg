@@ -1,0 +1,15 @@
+public class shopkeeperNPC extends NPC_Class {
+      
+    shopkeeperNPC(String fName, String lName, String description, int[] stats, String[] useableAction, Item[] inventory,
+                    int location, EquipableItem[] equipment, String[] dialogue, int health, int mana,
+                    int level) {
+        
+    //ADD SOMETHING SPECIAL ABOUT SHOPKEEPS
+    
+        super(fName, lName, description, stats, useableAction, inventory, location, 
+                equipment, dialogue, health, mana, level);
+        
+        this.essential = true;    
+       
+    }
+}
