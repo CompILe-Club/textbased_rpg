@@ -1,14 +1,12 @@
 public class NPC_Class implements Lifeforms{
     
     private final int[] stats;
-    private boolean essential;
+    public boolean essential;
     private final String fName;
     private final String lName;
     private final String description;
     private final String[] useableAction;
     private Item [] inventory;
-    private final boolean shopKeeper;
-    private final Quest[] linkedQuest;
     private final int location;
     private final EquipableItem[] equipment;
     private final String[] dialogue; 
@@ -17,8 +15,7 @@ public class NPC_Class implements Lifeforms{
     private int level;
     
     NPC_Class(String fName, String lName, String description, int[] stats, String[] useableAction, Item[] inventory,
-    boolean shopKeeper, Quest[] linkedQuest, int location, EquipableItem[] equipment, String[] dialogue, int health, int mana,
-    int level)
+              int location, EquipableItem[] equipment, String[] dialogue, int health, int mana, int level)
          {
              this.fName = fName;
              this.lName = lName;
@@ -26,8 +23,6 @@ public class NPC_Class implements Lifeforms{
              this.stats = stats;
              this.useableAction = useableAction;
              this.inventory = inventory;
-             this.shopKeeper = shopKeeper;
-             this.linkedQuest = linkedQuest;
              this.location = location;
              this.equipment = equipment;
              this.dialogue = dialogue;
@@ -36,7 +31,7 @@ public class NPC_Class implements Lifeforms{
              this.level = level;
              
              //Change useableAction.length == ? to equal the same amount of commands as a trash NPC will have
-            if(Quest.length == 0 && shopKeeper == false && useableAction.length <= 2)     
+            if(useableAction.length <= 2)     
                 this.essential = false;
             else
                 this.essential = true;
@@ -94,14 +89,7 @@ public class NPC_Class implements Lifeforms{
         return inventory;
     }
 
-    public boolean isShopKeeper() {
-        return shopKeeper;
-    }
-
-    public Quest[] getLinkedQuest() {
-        return linkedQuest;
-    }
-    
+   
     @Override
     public int getLocation() {
         return location;
