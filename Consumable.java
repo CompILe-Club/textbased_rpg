@@ -1,0 +1,4 @@
+interface Consumable extends Usable 
+{
+            
+}
