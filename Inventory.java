@@ -4,7 +4,6 @@
 //Parent Project: Text Based RPG
 //Company or Organization: CompILe @ Illinois Central College East Peoria, IL
 //Purpose: This class defines what an inventory is within the overall project of the Text Based RPG.
-
 public class Inventory 
 {
     //Holds an array of the Item interface
@@ -16,6 +15,11 @@ public class Inventory
     Inventory()
     {
         inventoryList = new Item[0];
+    }
+    
+    public Item[] getInventory()
+    {
+        return inventoryList;
     }
     
     //Allows and item to be added into the inventory if the inventory is not full.
@@ -72,10 +76,35 @@ public class Inventory
     //stackable or not.
     public void removeItem(int item)
     {
-        if(inventoryList[item] instanceof Stackable)
+        if(inventoryList[item] instanceof StackableItem)
             removeStackingItem(item);
         else
             removeNonstackingItem(item);
+    }
+    
+    public void removeItemByName(String item)
+    {
+        boolean noItem = true;
+        for(int indexInventory = 0; indexInventory < inventoryList.length; indexInventory++)
+        {
+            if(inventoryList[indexInventory].getItemName().equalsIgnoreCase(item))
+            {
+                if(inventoryList[indexInventory] instanceof StackableItem)
+                {
+                    removeStackingItem(indexInventory);
+                    noItem = false;
+                    break;
+                }
+                else
+                {
+                    removeNonstackingItem(indexInventory);
+                    noItem = false;
+                    break;
+                }
+            }
+        }
+        if(noItem)
+            System.out.printf ("No Item With That Name Found\n");
     }
     
     //This method makes a new temp inventory with one less space, then clones all 
@@ -101,27 +130,180 @@ public class Inventory
     //all together if there is only one item in the stack that is being dropped or used.
     private void removeStackingItem(int item)
     {
-                if(((StackableItem)(inventoryList[item])).stackAmount() != 1)
-                    ((StackableItem)(inventoryList[item])).removeAmount();
-                else
-                     removeNonstackingItem(item);
+        if(((StackableItem)(inventoryList[item])).stackAmount() != 1)
+            ((StackableItem)(inventoryList[item])).removeAmount();
+        else
+             removeNonstackingItem(item);
     }
     
     //This method checks to see if an item is usable or not and outputs the effect
     //of the item if it is or a message that the item is not usable if it is not.
     //It also checks to see if the item is a consumable item if so the comsumable
     //is destoryed on use.
-    public String useItem(int item)
+    public String useItem(int item, Player currentPlayer)
     {
-        String effect = "This Item has no use/consume effect.\n";
-        if(inventoryList[item] instanceof Usable)
+        String effect = "No Use Item With That Name Found\n";
+        if(inventoryList[item] instanceof UsableItem)
         {
-            effect = ((Usable)inventoryList[item]).useEffect();
-            if(inventoryList[item] instanceof Consumable)
+            if(System.currentTimeMillis() - ((UsableItem)inventoryList[item]).getLastUsed() > ((UsableItem)inventoryList[item]).cooldownTimer())
+            {
+                ((UsableItem)inventoryList[item]).setLastUsed(System.currentTimeMillis());
+                effect = ((UsableItem)inventoryList[item]).useEffect();
+                if(((UsableItem)inventoryList[item]).getItemEffect().split(":")[0].equalsIgnoreCase("heal"))
+                {
+                    currentPlayer.heal(Integer.parseInt((((UsableItem)inventoryList[item]).getItemEffect().split(":")[1])));
+                }
+                else if(((UsableItem)inventoryList[item]).getItemEffect().split(":")[0].equalsIgnoreCase("buff"))
+                {
+                    currentPlayer.buff(((UsableItem)inventoryList[item]).getItemEffect().split(":")[1].split(";"));
+                    currentPlayer.buff(100000, (System.currentTimeMillis()), inventoryList[item]);
+                }
+                if(((UsableItem)inventoryList[item]).isConsumable())
+                    removeItem(item);
+            }
+            else
+                effect = String.format("%s is currently on cooldown %d seconds remaining",
+                        inventoryList[item].getItemName(), (-1)*(System.currentTimeMillis() - ((UsableItem)inventoryList[item]).getLastUsed() - ((UsableItem)inventoryList[item]).cooldownTimer())/1000);
+        }
+        else if(inventoryList[item] instanceof StackableConsumableItem)
+        {
+            if(System.currentTimeMillis() - ((StackableConsumableItem)inventoryList[item]).getLastUsed() > ((StackableConsumableItem)inventoryList[item]).cooldownTimer())
+            {
+                ((StackableConsumableItem)inventoryList[item]).setLastUsed(System.currentTimeMillis());
+                if(((StackableConsumableItem)inventoryList[item]).getItemEffect().split(":")[0].equalsIgnoreCase("heal"))
+                {
+                    currentPlayer.heal(Integer.parseInt(((StackableConsumableItem)inventoryList[item]).getItemEffect().split(":")[1]));
+                }
+                else if(((StackableConsumableItem)inventoryList[item]).getItemEffect().split(":")[0].equalsIgnoreCase("buff"))
+                {
+                    currentPlayer.buff(((StackableConsumableItem)inventoryList[item]).getItemEffect().split(":")[1].split(";"));
+                    currentPlayer.buff(100000, (System.currentTimeMillis()), inventoryList[item]);
+                }
+                effect = ((StackableConsumableItem)inventoryList[item]).useEffect();
+                currentPlayer.buff(100000, (System.currentTimeMillis()), inventoryList[item]);
                 removeItem(item);
+            }
+            else
+                effect = String.format("%s is currently on cooldown %d seconds remaining",
+                        inventoryList[item].getItemName(), (-1)*(System.currentTimeMillis() - ((StackableConsumableItem)inventoryList[item]).getLastUsed() - ((StackableConsumableItem)inventoryList[item]).cooldownTimer())/1000);
         }
         return effect;    
     }
+    
+    public String useItemByName(String item, Player currentPlayer)
+    {
+        String effect = "No Item With That Name Found\n";
+        for(int indexInventory = 0; indexInventory < inventoryList.length; indexInventory++)
+            if(inventoryList[indexInventory].getItemName().equalsIgnoreCase(item))
+            {
+                effect = "This Item has no use/consume effect.\n";
+                if(inventoryList[indexInventory] instanceof UsableItem)
+                {
+                    if((System.currentTimeMillis() - ((UsableItem)inventoryList[indexInventory]).getLastUsed()) > ((UsableItem)inventoryList[indexInventory]).cooldownTimer())
+                    {
+                        ((UsableItem)inventoryList[indexInventory]).setLastUsed(System.currentTimeMillis()); 
+                        effect = ((UsableItem)inventoryList[indexInventory]).useEffect();
+                        if(((UsableItem)inventoryList[indexInventory]).getItemEffect().split(":")[0].equalsIgnoreCase("heal"))
+                        {
+                            currentPlayer.heal(Integer.parseInt((((UsableItem)inventoryList[indexInventory]).getItemEffect().split(":")[1])));
+                        }
+                        else if(((UsableItem)inventoryList[indexInventory]).getItemEffect().split(":")[0].equalsIgnoreCase("buff"))
+                        {
+                            currentPlayer.buff(((UsableItem)inventoryList[indexInventory]).getItemEffect().split(":")[1].split(";"));
+                            currentPlayer.buff(100000, (System.currentTimeMillis()), inventoryList[indexInventory]);
+                        }
+                        if(((UsableItem)inventoryList[indexInventory]).isConsumable())
+                        {
+                            removeItem(indexInventory);
+                            break;
+                        }
+                    }
+                    else
+                    effect = String.format("%s is currently on cooldown %d seconds remaining",
+                            inventoryList[indexInventory].getItemName(),(-1)*(System.currentTimeMillis() - ((UsableItem)inventoryList[indexInventory]).getLastUsed() - ((UsableItem)inventoryList[indexInventory]).cooldownTimer())/1000);
+                }
+                else if(inventoryList[indexInventory] instanceof StackableConsumableItem)
+                {
+                    if(System.currentTimeMillis() - ((StackableConsumableItem)inventoryList[indexInventory]).getLastUsed() > ((StackableConsumableItem)inventoryList[indexInventory]).cooldownTimer())
+                    {
+                        ((StackableConsumableItem)inventoryList[indexInventory]).setLastUsed(System.currentTimeMillis());
+                        effect = ((StackableConsumableItem)inventoryList[indexInventory]).useEffect();
+                        if(((StackableConsumableItem)inventoryList[indexInventory]).getItemEffect().split(":")[0].equalsIgnoreCase("heal"))
+                        {
+                            currentPlayer.heal(Integer.parseInt((((StackableConsumableItem)inventoryList[indexInventory]).getItemEffect().split(":")[1])));
+                        }
+                        else if(((StackableConsumableItem)inventoryList[indexInventory]).getItemEffect().split(":")[0].equalsIgnoreCase("buff"))
+                        {
+                            currentPlayer.buff(((StackableConsumableItem)inventoryList[indexInventory]).getItemEffect().split(":")[1].split(";"));
+                            currentPlayer.buff(100000, (System.currentTimeMillis()), inventoryList[indexInventory]);
+                        }
+                        removeItem(indexInventory);
+                        break;
+                    }
+                    else
+                        effect = String.format("%s is currently on cooldown %d seconds remaining",
+                            inventoryList[indexInventory].getItemName(), (-1)*(System.currentTimeMillis() - ((StackableConsumableItem)inventoryList[indexInventory]).getLastUsed() - ((StackableConsumableItem)inventoryList[indexInventory]).cooldownTimer())/1000);
+                }
+            }
+        return effect;    
+    }
+    
+    public void checkEquipedItems(Player currentPlayer)
+    {
+        currentPlayer.checkEquipItems();
+    }
+    
+    //Outputs the information of an item.
+    public String equipItemByName(String item, Player currentPlayer)
+    {
+        for(int indexInventory = 0; indexInventory < inventoryList.length; indexInventory++)
+            if(inventoryList[indexInventory].getItemName().equalsIgnoreCase(item) && inventoryList[indexInventory] instanceof EquipableItem)
+            {
+                if(((EquipableItem)(inventoryList[indexInventory])).canEquip(currentPlayer.getStats()))
+                {
+                    if(!((EquipableItem)(inventoryList[indexInventory])).isEquip())
+                    {
+                        if(currentPlayer.equipItem(((EquipableItem)(inventoryList[indexInventory]))))
+                        {
+                            ((EquipableItem)(inventoryList[indexInventory])).equip();
+                            return String.format("%s is now equip\n", inventoryList[indexInventory].getItemName());
+                        }
+                        else
+                            return String.format("There is currently an item in that equip slot\n");
+                    }
+                    else
+                    {
+                        return String.format("%s is already equipped\n", inventoryList[indexInventory].getItemName());
+                    }
+                }
+                else
+                {
+                    return String.format("You can not equip this item\n");
+                }
+            }
+        return "No Equipable Item With That Name Found\n";
+    }
+    
+    public String unequipItemByName(String item, Player currentPlayer)
+    {
+        for(int indexInventory = 0; indexInventory < inventoryList.length; indexInventory++)
+            if(inventoryList[indexInventory].getItemName().equalsIgnoreCase(item) && inventoryList[indexInventory] instanceof EquipableItem)
+            {
+                    if(((EquipableItem)(inventoryList[indexInventory])).isEquip())
+                    {
+                        currentPlayer.unequipItem((((EquipableItem)(inventoryList[indexInventory]))));
+                        ((EquipableItem)(inventoryList[indexInventory])).equip();
+                        return String.format("%s is now unequip\n", inventoryList[indexInventory].getItemName());     
+                    }
+                    else
+                    {
+                        return String.format("%s was never equip\n", inventoryList[indexInventory].getItemName());
+                    }
+            }
+        return "No Equipable Item With That Name Found\n";
+    }
+    
+    
     
     //Outputs the information of an item.
     public String viewItem(int item)
@@ -129,20 +311,34 @@ public class Inventory
         return inventoryList[item].toString();
     }
     
+    public String viewItemByName(String item)
+    {
+        for(int indexInventory = 0; indexInventory < inventoryList.length; indexInventory++)
+            if(inventoryList[indexInventory].getItemName().equalsIgnoreCase(item))
+                return inventoryList[indexInventory].toString();
+        return "No Item With That Name Found\n";
+    }
+    
+    public int getItemIDByName(String item)
+    {
+        for(int indexInventory = 0; indexInventory < inventoryList.length; indexInventory++)
+            if(inventoryList[indexInventory].getItemName().equalsIgnoreCase(item))
+                return inventoryList[indexInventory].getItemId();
+        return 0;
+    }
+    
     //Outputs the current inventory with item information for each item based on the item type.
     public String list()
     {
-        String outputString = String.format("Inventory List\n\t");
-        for(int indexInventory = 0; indexInventory < inventoryList.length; indexInventory++)
-        {
-            outputString += "Item Slot " + (indexInventory + 1) + " " + inventoryList[indexInventory].toString();
-            if(inventoryList[indexInventory] instanceof StackableItem)
-                outputString += " " + ((StackableItem)(inventoryList[indexInventory])).stackAmount() + " ";
-            if(inventoryList[indexInventory] instanceof EquipableItem)
-                if(((EquipableItem)(inventoryList[indexInventory])).isEquip())
-                    outputString += " Equipped";
-            outputString += "\n\t";
-        }
-        return outputString;
+            String outputString = "";
+            for(int indexInventory = 0; indexInventory < inventoryList.length; indexInventory++)
+            {
+                outputString += "\tItem Slot " + (indexInventory + 1) + " " + inventoryList[indexInventory].toString();
+                if(inventoryList[indexInventory] instanceof EquipableItem)
+                    if(((EquipableItem)(inventoryList[indexInventory])).isEquip())
+                        outputString += " Equipped";
+                outputString += "\n";
+            }
+            return outputString;
     }
 }
