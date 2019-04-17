@@ -15,13 +15,15 @@ public class TrashItem implements Item
     //Holds the favor text of this item, which describes what this item looks like
     //and some other lore related information and can not be changed after the instance of a EquipableItem has been made.
     private final String itemDetails;
+    private final int value;
     
     //Initializing the item with the desired information input when calling this constructor.
-    TrashItem(String itemName, int itemId, String itemDetails)
+    TrashItem(String itemName, int value, int itemId, String itemDetails)
     {
         this.itemName = itemName;
         this.itemId = itemId;
         this.itemDetails = itemDetails;
+        this.value = value;
     }
     
     //Returns the favor text of this item.
@@ -29,6 +31,12 @@ public class TrashItem implements Item
     public String getDetails()
     {
         return itemDetails;
+    }
+    
+    @Override
+    public int getValue()
+    {
+        return this.value;
     }
     
     //Returns the sring of the items name.
@@ -51,5 +59,11 @@ public class TrashItem implements Item
     {
         return String.format("%s\n\tItem Details:\n\t%s\n"
                 , itemName, itemDetails);
+    }
+    
+    public String returnToTextFile()
+    {
+        return String.format("T#%s#%d#%s", 
+                this.itemName, this.value, this.itemDetails);
     }
 }
