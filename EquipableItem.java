@@ -1,4 +1,3 @@
-package textbasedrpg;
 //Created By: Daniel August Johnston
 //Author Title: CompILe President (Since Spring 2019)
 //Date of Completion: 14 February 2019
