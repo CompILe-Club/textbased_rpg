@@ -9,12 +9,11 @@ public class StackableNonconsumableItem extends StackableItem
 {
     //Holds the current amount of this item in a stack.
     private int currentAmount;
-    
     //Initializing the item with the desired information input when calling this constructor.
-    StackableNonconsumableItem(String itemName, int itemId, String itemDetails, int maxamount
+    StackableNonconsumableItem(String itemName, int value, int itemId, String itemDetails, int maxamount
             , int currentAmount)
     {
-        super(itemName,itemId,itemDetails,maxamount);
+        super(itemName,value,itemId,itemDetails,maxamount);
         this.currentAmount = currentAmount;
     }
     
@@ -43,7 +42,14 @@ public class StackableNonconsumableItem extends StackableItem
     @Override
     public String toString()
     {
-        return String.format("%s\n\tItem Amount:\n\t%d/%d\nItem Details:\n\t%s\n"
+        return String.format("%s\n\tItem Amount:\n\t%d/%d\n\tItem Details:\n\t%s\n"
                 , super.getItemName(), currentAmount,super.maxStackAmount(), super.getDetails());
+    }
+    
+    public String returnToTextFile()
+    {
+        return String.format("S#%s#%d#%s#%d#%d", 
+                this.getItemName(), this.getValue(), this.getDetails(), this.maxStackAmount()
+                , this.stackAmount());
     }
 }
