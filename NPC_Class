@@ -1,4 +1,4 @@
-public class NPC_Class implements Lifeforms{
+public class NPC implements Lifeforms{
     
     private final int[] stats;
     private boolean essential;
@@ -6,19 +6,21 @@ public class NPC_Class implements Lifeforms{
     private final String lName;
     private final String description;
     private final String[] useableAction;
-    private Item [] inventory;
+    private final int NPCID;
+    private Inventory inventory;
     private final boolean shopKeeper;
-    private final Quest[] linkedQuest;
+    private final int[] linkedQuest;
     private final int location;
-    private final EquipableItem[] equipment;
-    private final String[] dialogue; 
+    private final int[] equipment;
+    private final String dialogue;
+    private final String[] questDialogue; 
     private int health;
     private int mana;
     private int level;
     
-    NPC_Class(String fName, String lName, String description, int[] stats, String[] useableAction, Item[] inventory,
-    boolean shopKeeper, Quest[] linkedQuest, int location, EquipableItem[] equipment, String[] dialogue, int health, int mana,
-    int level)
+    public NPC(String fName, String lName, String description, int[] stats, String[] useableAction, Inventory inventory,
+    boolean shopKeeper, int[] linkedQuest, String[] questDialogue, int location, int[] equipment, String dialogue, int health, int mana,
+    int level, int NPCID)
          {
              this.fName = fName;
              this.lName = lName;
@@ -34,9 +36,10 @@ public class NPC_Class implements Lifeforms{
              this.health = health;
              this.mana = mana;
              this.level = level;
-             
+             this.NPCID = NPCID;
+             this.questDialogue = questDialogue;
              //Change useableAction.length == ? to equal the same amount of commands as a trash NPC will have
-            if(Quest.length == 0 && shopKeeper == false && useableAction.length <= 2)     
+            if(linkedQuest.length == 0 && shopKeeper == false && useableAction.length <= 2)     
                 this.essential = false;
             else
                 this.essential = true;
@@ -54,18 +57,27 @@ public class NPC_Class implements Lifeforms{
     }
         
     @Override
-    public int attack(Lifeforms target)
+    public int attack(Lifeforms target, World currentWorld)
     { 
        int critChance = accuracy(target);
        if(!(target.getHealth() <= 0) && this.health > 0 && !(critChance == 0))
        {    if(critChance  > (98 - this.stats[8]/5))
-                return equipment[4].getDamage(stats) * 1.5;
-            return equipment[4].getDamage(stats);
+                return (int)(((EquipableItem)(currentWorld.getGameItems().get(equipment[4]))).getDamage(stats[2]) * 1.5);
+            return ((EquipableItem)(currentWorld.getGameItems().get(equipment[4]))).getDamage(stats[2]);
        }
        return 0; 
     }
     
-  
+    public String[] getQuestDialogue()
+    {
+        return this.questDialogue;
+    }
+    
+    public int getNPCID()
+    {
+        return this.NPCID;
+    }
+    
     @Override
     public int[] getStats() {
         return stats;
@@ -90,7 +102,7 @@ public class NPC_Class implements Lifeforms{
     }
     
     @Override
-    public Item[] getInventory() {
+    public Inventory getInventory() {
         return inventory;
     }
 
@@ -98,8 +110,22 @@ public class NPC_Class implements Lifeforms{
         return shopKeeper;
     }
 
-    public Quest[] getLinkedQuest() {
+    public int[] getLinkedQuest() {
         return linkedQuest;
+    }
+    
+    public boolean hasItemInShop(String Item)
+    {
+        if(!(this.inventory.viewItemByName(Item).equalsIgnoreCase("No Item With That Name Found\n")))
+            return true;
+        else
+            return false;
+    }
+    
+    public int buyItemFromShop(String Item)
+    {
+        inventory.removeItemByName(Item);
+        return inventory.getItemIDByName(Item);
     }
     
     @Override
@@ -107,11 +133,11 @@ public class NPC_Class implements Lifeforms{
         return location;
     }
 
-    public EquipableItem[] getEquipment() {
+    public int[] getEquipment() {
         return equipment;
     }
 
-    public String[] getDialogue() {
+    public String getDialogue() {
         return dialogue;
     }
     
