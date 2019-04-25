@@ -1,136 +1,223 @@
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Scanner;
-import java.io.File;
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.FileOutputStream;
-import java.io.FileInputStream;
 import java.io.PrintStream;
+import java.util.HashMap;
+import java.util.Map;
+import javafx.application.Application;
+import static javafx.application.Application.launch;
+import javafx.event.EventHandler;
+import javafx.scene.Scene;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+import javafx.scene.input.KeyEvent;
+import javafx.stage.WindowEvent;
+import javafx.scene.input.KeyCode;
+import javafx.application.Platform;
 
-public class TextBasedRPG 
-{
-    private static final Scanner INPUT =  new Scanner(System.in);
+
+public class TextBasedRPGGameEngine extends Application {
     private static World WORLD;
     private static Player currentPlayer;
-    private static String playerName;
+    private static String playerName = "";
     private static String LOADSAVE;
-
-    public static void main(String[] args) 
+    private static final TextField INPUT =  new TextField ();
+    private static TextArea textArea = new TextArea();
+    private static String [] lastText = new String[0];
+    private static int currentLastTextIndex = 0;
+    private static boolean currentlyIndexing = false;
+    Thread loadWorld = new Thread()
     {
-        Thread thread1 = new Thread()
+        @Override
+        public void run() 
         {
-            @Override
-            public void run()
+            try
             {
-                boolean online = true;
-                Map commands = new HashMap();
-                //Done
-                commands.put("STATUS", 0);
-                //
-                commands.put("QUEST", 1);
-                //Done
-                commands.put("HELP", 2);
-                //Done
-                commands.put("EXIT", 3);
-                //Done
-                commands.put("INVENTORY", 4);
-                //
-                commands.put("LOCK", 5);
-                //
-                commands.put("NPC", 6);
-                //Done
-                commands.put("MOVE", 7);
-                //
-                commands.put("ATTACK", 8);
-                //Done
-                commands.put("SEARCH", 9);
-                //Done
-                commands.put("SAVE", 10);
-                
-                while(online)
+                LOADSAVE = loadSave();
+                loadWorld();
+                linkGrids();
+                loadPlayer();
+                textArea.appendText(String.format("Welcome %s\n\n", playerName));
+                textArea.appendText(new HELP_COMMAND("HELP", true).printOutput() + "\n");
+                textArea.appendText(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getLocationName() + "\n");
+                textArea.appendText(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getDetails() + "\n");
+                textArea.appendText(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).searchArea() + "\n");
+            }
+            catch(Exception e)
+            {
+                textArea.appendText(e + "\n");
+                while(true)
                 {
-                    String command = INPUT.next();
-                    command += INPUT.nextLine();
-                    String mainCommand = command.split(" ")[0].toUpperCase();
-                    int commandIndex = 25;
-                    if(commands.containsKey(mainCommand))
-                        commandIndex = (int)(commands.get(mainCommand));
-                    switch(commandIndex)
-                    {
-                        case 0:
-                            System.out.printf(currentPlayer.getStatus());
-                            break;
-                        case 1:
-                            if(command.split(" ").length > 1)
-                                questCommands(command);
-                            else
-                                System.out.printf(new HELP_COMMAND("HELP QUEST", true).printOutput());
-                            break;
-                        case 2:
-                            System.out.printf(new HELP_COMMAND(command, true).printOutput());
-                            break;
-                        case 3:
-                                online = false;
-                            break;
-                        case 4:
-                            if(command.split(" ").length > 1)
-                                inventoryCommands(command);
-                            else
-                                System.out.printf(new HELP_COMMAND("HELP INVENTORY", true).printOutput());
-                            break;
-                        case 5:
-                            if(command.split(" ").length > 1)
-                                lockCommands(command);
-                            else
-                                System.out.printf(new HELP_COMMAND("HELP LOCK", true).printOutput());
-                            break;
-                        case 6:
-                            if(command.split(" ").length > 1)
-                                npcCommands(command);
-                            else
-                                System.out.printf(new HELP_COMMAND("HELP NPC", true).printOutput());
-                            break;
-                        case 7:
-                            if(command.split(" ").length > 1)
-                                moveCommands(command);
-                            else
-                                System.out.printf(new HELP_COMMAND("HELP MOVE", true).printOutput());
-                            break;
-                        case 8:
-                                if(command.split(" ").length > 1)
-                                    attack(command);
-                                else
-                                    System.out.printf(new HELP_COMMAND("HELP ATTACK", true).printOutput());
-                            break;
-                        case 9:
-                                System.out.printf(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).searchArea());
-                            break;
-                        case 10:
-                            try
-                            {
-                                savePlayer();
-                                System.out.println("Current Game World Has Been Saved.");
-                            }
-                            catch(Exception e)
-                            {
-                                
-                            }
-                            break;
-                        default:
-                            System.out.printf(command.split(" ")[0] + " is not a valid command.\n%s", new HELP_COMMAND("Help", true).printOutput());
-                    }
+
                 }
             }
-        };
+            finally
+            {
+
+            } 
+        }
+    };
+    
+    @Override
+    public void start(Stage primaryStage) {
+        primaryStage.setTitle("Text Based RPG Game Engine");
+        double height = 475;
+        double width = 800; 
+        double height2 = 10;
+        double width2 = 800;
+                
+        textArea.setPrefHeight(height);
+        textArea.setPrefWidth(width);  
+        INPUT.setPrefHeight(height2);
+        INPUT.setPrefWidth(width2); 
+        textArea.setWrapText(true);
+        textArea.setStyle("-fx-control-inner-background:#000000; -fx-font-family: Consolas; -fx-highlight-fill: #00ff00; -fx-highlight-text-fill: #000000; -fx-text-fill: #00ff00");
+        INPUT.setLayoutY(490);
+        textArea.setEditable(false);
+        
+        VBox vbox = new VBox(textArea, INPUT);
+
+        Scene scene = new Scene(vbox, 800, 500);
+        primaryStage.setScene(scene);
+        primaryStage.show();
+        INPUT.setOnKeyPressed(new EventHandler<KeyEvent>() {
+            @Override
+            public void handle(KeyEvent keyEvent) {
+                if (keyEvent.getCode() == KeyCode.ENTER && (currentPlayer == null || currentPlayer.getPlayerHealth() > 0) && 
+                        (!INPUT.getText().equalsIgnoreCase("")&& !INPUT.getText().equalsIgnoreCase(" ")))  {
+                    if(!playerName.equalsIgnoreCase("NEW") && !playerName.equalsIgnoreCase(""))
+                    {
+                        Map commands = new HashMap();
+                        //Done
+                        commands.put("STATUS", 0);
+                        //
+                        commands.put("QUEST", 1);
+                        //Done
+                        commands.put("HELP", 2);
+                        //Done
+                        commands.put("INVENTORY", 4);
+                        //Done
+                        commands.put("NPC", 6);
+                        //Done
+                        commands.put("MOVE", 7);
+                        //Done
+                        commands.put("ATTACK", 8);
+                        //Done
+                        commands.put("SEARCH", 9);
+                        //Done
+                        commands.put("SAVE", 10);
+                        //Done
+                        commands.put("LOOT", 11);
+                        String command = INPUT.getText();
+                        addToLastText(command);
+                        currentlyIndexing = false;
+                        INPUT.setText("");
+                        textArea.appendText(command + "\n\n");
+                        String mainCommand = command.split(" ")[0].toUpperCase();
+                        int commandIndex = 25;
+                        if(commands.containsKey(mainCommand))
+                            commandIndex = (int)(commands.get(mainCommand));
+                        switch(commandIndex)
+                        {
+                            case 0:
+                                textArea.appendText(currentPlayer.getStatus());
+                                break;
+                            case 1:
+                                if(command.split(" ").length > 1)
+                                    questCommands(command);
+                                else
+                                    textArea.appendText(new HELP_COMMAND("HELP QUEST", true).printOutput());
+                                break;
+                            case 2:
+                                textArea.appendText(new HELP_COMMAND(command, true).printOutput());
+                                break;
+                            case 4:
+                                if(command.split(" ").length > 1)
+                                    inventoryCommands(command);
+                                else
+                                    textArea.appendText(new HELP_COMMAND("HELP INVENTORY", true).printOutput());
+                                break;
+                            case 6:
+                                if(command.split(" ").length > 1)
+                                    npcCommands(command);
+                                else
+                                    textArea.appendText(new HELP_COMMAND("HELP NPC", true).printOutput());
+                                break;
+                            case 7:
+                                if(command.split(" ").length > 1)
+                                    moveCommands(command);
+                                else
+                                    textArea.appendText(new HELP_COMMAND("HELP MOVE", true).printOutput());
+                                break;
+                            case 8:
+                                    if(command.split(" ").length > 1)
+                                        attack(command);
+                                    else
+                                        textArea.appendText(new HELP_COMMAND("HELP ATTACK", true).printOutput());
+                                break;
+                            case 9:
+                                    textArea.appendText(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).searchArea());
+                                break;
+                            case 10:
+                                try
+                                {
+                                    savePlayer();
+                                    textArea.appendText("Current Game World Has Been Saved.\n");
+                                }
+                                catch(Exception e)
+                                {
+
+                                }
+                                break;
+                            case 11:
+                                try
+                                {
+                                    if(command.split(" ").length > 1)
+                                            loot(command);
+                                    else
+                                        textArea.appendText(new HELP_COMMAND("HELP LOOT", true).printOutput());
+                                }
+                                catch(Exception e)
+                                {
+                                    textArea.appendText(e + "\n");
+                                }
+                                break;
+                            default:
+                                textArea.appendText(String.format(command.split(" ")[0] + " is not a valid command.\n%s", new HELP_COMMAND("Help", true).printOutput()));
+                        }
+                        textArea.appendText("\n");
+                    }
+                    else
+                    {
+                        String command = INPUT.getText();
+                        INPUT.setText("");
+                        textArea.appendText(command + "\n\n");
+                        playerName = command;
+                    }
+                }
+                else if(keyEvent.getCode() == KeyCode.UP && currentLastTextIndex >= 0 && lastText.length > 0)
+                {
+                    INPUT.setText(lastText[currentLastTextIndex]);
+                    if(currentLastTextIndex > 0 && currentlyIndexing)
+                       currentLastTextIndex --;
+                    currentlyIndexing = true;
+                }
+                else if(keyEvent.getCode() == KeyCode.DOWN && currentLastTextIndex < lastText.length && lastText.length > 0 && currentlyIndexing)
+                {
+                    INPUT.setText(lastText[currentLastTextIndex]);
+                    if(currentLastTextIndex < lastText.length - 1)
+                       currentLastTextIndex ++;
+                }
+            }
+        });
         try
         {
-            LOADSAVE = loadSave();
-            loadWorld();
-            loadPlayer();
-            thread1.start();
-            thread1.join();
+            loadWorld.start();
         }catch(Exception e)
         {
             System.out.println(e);
@@ -139,17 +226,32 @@ public class TextBasedRPG
                 
             }
         }
-        finally
+    }
+    @Override
+    public void stop(){
+        try
+        {
+            if(!playerName.equalsIgnoreCase("NEW") && !playerName.equalsIgnoreCase(""))
+                savePlayer();
+            textArea.appendText("Current Game World Has Been Saved.\n");
+            loadWorld.destroy();
+            Platform.exit();
+        }
+        catch(Exception e)
         {
 
         }
+    }
+
+    public static void main(String[] args) 
+    {
+        launch(args);
         
     }
     
-    
-
     private static String loadSave() throws Exception
     {
+        
         File file = new File("gameSaves");
         String[] directories = file.list();
         if(directories.length == 0)
@@ -162,11 +264,14 @@ public class TextBasedRPG
             do
             {
                 goodSave = false;
-                System.out.printf("Current Saves:\n\t");
+                textArea.appendText(String.format("Current Saves:\n\t"));
                 for(int indexSaves = 0; indexSaves < directories.length; indexSaves++)
-                    System.out.printf("[%d] %s\n\t", indexSaves + 1, directories[indexSaves]);
-                System.out.printf("\nChoose A Save By Name or New: ");
-                playerName = INPUT.next();
+                    textArea.appendText(String.format("[%d] %s\n\t", indexSaves + 1, directories[indexSaves]));
+                textArea.appendText(String.format("\nChoose A Save By Name or New: "));
+                while(playerName.equalsIgnoreCase(""))
+                {
+                    
+                }
                 for(int indexSaves = 0; indexSaves < directories.length; indexSaves++)
                     if(playerName.equalsIgnoreCase(directories[indexSaves]))
                         goodSave = true;
@@ -174,6 +279,10 @@ public class TextBasedRPG
                 {
                     goodSave = true;
                     playerName = createNewSave();
+                }
+                if(goodSave == false)
+                {
+                    playerName = "";
                 }
             }while(!goodSave);
             
@@ -187,8 +296,11 @@ public class TextBasedRPG
         do
         {
             goodName = true;
-            System.out.printf("New Character Name: ");
-            playerName = INPUT.next();
+            textArea.appendText("\nNew Character Name: ");
+            while(playerName.equalsIgnoreCase("NEW") || playerName.equalsIgnoreCase(""))
+            {
+
+            }
             String sourceFilesNames [] = new File("gameFiles").list();
             File sourceFiles[] = new File[sourceFilesNames.length];
             for(int indexFiles = 0; indexFiles < sourceFiles.length; indexFiles++)
@@ -203,7 +315,11 @@ public class TextBasedRPG
             else
             {
                 goodName = false;
-                System.out.printf("Current Save Already Exist or Key Word Was Input.\n");
+                textArea.appendText(String.format("Current Save Already Exist or Key Word Was Input.\n"));
+            }
+            if(goodName == false)
+            {
+                playerName = "NEW";
             }
         }while(!goodName);
         return playerName;
@@ -225,6 +341,7 @@ public class TextBasedRPG
         fileStream.println("0");
         fileStream.println("100");
         fileStream.println("0");
+        fileStream.println("1000");
         fileStream.flush();
         fileStream.close();
     }
@@ -349,20 +466,22 @@ public class TextBasedRPG
             lineBreakDown = currentLine.split("-");
             for(int creatureIndex = 0; creatureIndex < lineBreakDown.length; creatureIndex++)
             {
-                Map dropTable = new HashMap();
                 String [] creatureBreakDown = lineBreakDown[creatureIndex].split("#");
                 String [] dropBreakDown = creatureBreakDown[9].split(";");
+                int [] drops = new int[dropBreakDown.length];
+                int [] dropChance = new int [dropBreakDown.length];
                 for(int dropIndex = 0; dropIndex < dropBreakDown.length; dropIndex++)
                 {
                     String [] split = dropBreakDown[dropIndex].split(":");
-                    dropTable.put(Integer.parseInt(split[0]), Integer.parseInt(split[1]));
+                    drops[dropIndex] = Integer.parseInt(split[0]);
+                    dropChance[dropIndex] = Integer.parseInt(split[1]);
                 }
                 Creature newCreature =  new Creature(creatureBreakDown[0], creatureIndex, 
                         Integer.parseInt(creatureBreakDown[1]), creatureBreakDown[2], 
                         Integer.parseInt(creatureBreakDown[3]), new int[0],
                         Integer.parseInt(creatureBreakDown[4]), Integer.parseInt(creatureBreakDown[5]), 
                         Integer.parseInt(creatureBreakDown[6]), Integer.parseInt(creatureBreakDown[7]), 
-                        Integer.parseInt(creatureBreakDown[8]), dropTable,
+                        Integer.parseInt(creatureBreakDown[8]), drops, dropChance,
                         Integer.parseInt(creatureBreakDown[10]), false, 0); 
                 gameCreatures.put(creatureIndex, newCreature);
             }
@@ -395,12 +514,12 @@ public class TextBasedRPG
             currentLine = "";
             while (textBuffer.ready()) 
             {
-                currentLine += textBuffer.readLine() + "#";
+                currentLine += textBuffer.readLine() + "=";
             }
-            lineBreakDown = currentLine.split("#");
+            lineBreakDown = currentLine.split("=");
             for(int npcIndex = 0; npcIndex < lineBreakDown.length; npcIndex++)
             {
-                String [] npcBreakDown = lineBreakDown[npcIndex].split(":");
+                String [] npcBreakDown = lineBreakDown[npcIndex].split("#");
                 
                 String [] statsBreakDown = npcBreakDown[3].split(";");
                 int [] stats = new int[statsBreakDown.length];
@@ -413,17 +532,16 @@ public class TextBasedRPG
                 {
                     String [] stackableItemBreakDown = itemBreakDown[itemIndex].split(":");
                     if(stackableItemBreakDown.length == 1)
-                        items.addItem((Item)(WORLD.getGameItems().get(Integer.parseInt(stackableItemBreakDown[0]))));
+                        items.addItem((Item)(gameItems.get(Integer.parseInt(stackableItemBreakDown[0]))));
                     else
                     {
                         Item newItem;
-
                         if(((Item)(gameItems.get(Integer.parseInt(stackableItemBreakDown[0])))) instanceof StackableConsumableItem)
                         {
                             StackableConsumableItem currentItem = ((StackableConsumableItem)(gameItems.get(Integer.parseInt(stackableItemBreakDown[0]))));
                             newItem = new StackableConsumableItem(currentItem.getItemName(), currentItem.getValue()
                                     , currentItem.getItemId(), currentItem.getDetails(), currentItem.maxStackAmount(), 
-                                    1,currentItem.useEffect(), currentItem.cooldownTimer(),currentItem.getRequirements()); 
+                                    1,currentItem.getItemEffect(), currentItem.cooldownTimer(),currentItem.getRequirements()); 
                         }
                         else
                         {
@@ -436,22 +554,32 @@ public class TextBasedRPG
                             items.addItem(newItem);      
                     }
                 }
-                
                 String [] questBreakDown = npcBreakDown[7].split(";");
                 int [] quests = new int[questBreakDown.length];
                 for(int questIndex = 0; questIndex < questBreakDown.length; questIndex++)
                     quests[questIndex] = Integer.parseInt(questBreakDown[questIndex]);
-                
                 String [] equipmentBreakDown = npcBreakDown[10].split(";");
-                int [] equipment = new int[equipmentBreakDown.length];
+                EquipableItem [] equipment = new EquipableItem[equipmentBreakDown.length];
                 for(int equipmentIndex = 0; equipmentIndex < equipmentBreakDown.length; equipmentIndex++)
-                    equipment[equipmentIndex] = Integer.parseInt(equipmentBreakDown[equipmentIndex]);
+                {
+                    for(int indexInventory = 0; indexInventory < items.getInventory().length; indexInventory++)
+                    {
+                        if((items.getInventory()[indexInventory].getItemId() == Integer.parseInt(equipmentBreakDown[equipmentIndex])))
+                        {
+                            if(!((EquipableItem)(items.getInventory()[indexInventory])).isEquip())
+                            {
+                                ((EquipableItem)(items.getInventory()[indexInventory])).equip();
+                                equipment[equipmentIndex] = ((EquipableItem)(items.getInventory()[indexInventory]));
+                            }
+                        }
+                    }
+                }
                 
                 NPC newNPC = new NPC(npcBreakDown[0], npcBreakDown[1], npcBreakDown[2], 
-                        stats, npcBreakDown[4].split(";"), items, Integer.parseInt(itemBreakDown[6]) == 1, 
-                        quests, itemBreakDown[8].split(";"), Integer.parseInt(itemBreakDown[9]), equipment, itemBreakDown[11], 
-                        Integer.parseInt(itemBreakDown[12]), Integer.parseInt(itemBreakDown[13]), 
-                        Integer.parseInt(itemBreakDown[14]), npcIndex);
+                        stats, npcBreakDown[4].split(";"), items, Integer.parseInt(npcBreakDown[6]) == 1, 
+                        quests, npcBreakDown[8].split(";"), Integer.parseInt(npcBreakDown[9]), equipment, npcBreakDown[11], 
+                        Integer.parseInt(npcBreakDown[12]), Integer.parseInt(npcBreakDown[13]), 
+                        Integer.parseInt(npcBreakDown[14]), npcIndex);
                 gameNPCs.put(npcIndex, newNPC);
             }
             //***********************************************************************************************
@@ -495,6 +623,7 @@ public class TextBasedRPG
             
             //***********************************************************************************************
             //Reads in grids from the Grids.txt file and adds them into the list of grids in the world.
+            
             File gridFile = new File(LOADSAVE + "Grids.txt"); 
             textBuffer = new BufferedReader(new FileReader(gridFile)); 
             currentLine = "";
@@ -510,28 +639,71 @@ public class TextBasedRPG
                 String [] gameObjectsBreakDown = gridBreakDown[0].split(";");
                 GameObjects [] gridObjects = new GameObjects[gameObjectsBreakDown.length];
                 for(int objectIndex = 0; objectIndex < gameObjectsBreakDown.length; objectIndex++)
-                    gridObjects[objectIndex] = (GameObjects)(gameObjects.get(Integer.parseInt(gameObjectsBreakDown[objectIndex])));
+                {
+                    GameObjects current = (GameObjects)(gameObjects.get(Integer.parseInt(gameObjectsBreakDown[objectIndex])));
+                    if(current != null)
+                    { 
+                        gridObjects [objectIndex] = new GameObjects(current.getName(), current.getObjectID(), current.isIsMoveable()
+                                , current.getDetails(), current.isIsUsable(), current.getUseEffect());
+                    }
+                    else
+                    {
+                        gridObjects[objectIndex] = null;
+                    }
+                }
                 
                 String [] creaturesBreakDown = gridBreakDown[1].split(";");
                 Creature [] creatures = new Creature[creaturesBreakDown.length];
                 for(int creatureIndex = 0; creatureIndex < creaturesBreakDown.length; creatureIndex++)
                 {
                     Creature current = (Creature)(gameCreatures.get(Integer.parseInt(creaturesBreakDown[creatureIndex])));
-                    creatures [creatureIndex] = new Creature(current.getName(), current.getCreatureID(),
-                    current.getLevel(), current.getDetails(), current.getAttack(), new int[0],
-                    current.getMaxItems(), current.getMinItems(), current.getXp(), current.getHealth(),
-                    current.getGridSize(),  current.getDropTable(), current.getRespawn(), false, 0);
+                    if(current != null)
+                    {
+                        creatures [creatureIndex] = new Creature(current.getName(), current.getCreatureID(),
+                        current.getLevel(), current.getDetails(), current.getAttack(), new int[0],
+                        current.getMaxItems(), current.getMinItems(), current.getXp(), current.getHealth(),
+                        current.getGridSize(),  current.getDrops(), current.getDropsChance(), current.getRespawn(), false, 0);
+                    }
+                    else
+                    {
+                        creatures[creatureIndex] = null;
+                    }
                 }
                 
                 String [] NPCBreakDown = gridBreakDown[2].split(";");
                 NPC [] NPCs = new NPC[NPCBreakDown.length];
                 for(int npcIndex = 0; npcIndex < NPCBreakDown.length; npcIndex++)
-                    NPCs[npcIndex] = (NPC)(gameNPCs.get(Integer.parseInt(NPCBreakDown[npcIndex])));
+                {
+                    NPC current = (NPC)(gameNPCs.get(Integer.parseInt(NPCBreakDown[npcIndex])));
+                    if(current != null)
+                    {
+                        NPCs[npcIndex] = new NPC(current.getFirstName(), current.getLastName(), current.getDescription(),
+                            current.getStats(), current.getUseableAction(), current.getInventory(), current.isShopKeeper(),
+                            current.getLinkedQuest(), current.getQuestDialogue(), gridIndex, current.getEquipment(),
+                            current.getDialogue(), current.getHealth(), current.getMana(), current.getLevel(), current.getNPCID());
+                    }
+                    else
+                    {
+                        NPCs[npcIndex] = null;
+                    }
+                }
                 
                 String [] structureBreakDown = gridBreakDown[3].split(";");
                 Structure [] structures = new Structure[structureBreakDown.length];
                 for(int structureIndex = 0; structureIndex < structureBreakDown.length; structureIndex++)
-                    structures[structureIndex] = (Structure)(gameStructures.get(Integer.parseInt(NPCBreakDown[structureIndex])));
+                {
+                     Structure current = (Structure)(gameStructures.get(Integer.parseInt(NPCBreakDown[structureIndex])));
+                    if(current != null)
+                    {
+                        structures[structureIndex] = new Structure(current.getGridsCovered(), current.getDoorGrid()
+                                , current.getEnterFrom(), current.getStructureID(), current.getName()
+                                , current.getDetail(), current.isRideable(), current.isPushable());
+                    }
+                    else
+                    {
+                        structures[structureIndex] = null;
+                    }
+                }
                 
                 Grid newGrid = new Grid(gridObjects, creatures, NPCs, structures,
                         gridBreakDown[4], gridIndex, gridBreakDown[5]);
@@ -548,8 +720,6 @@ public class TextBasedRPG
     {
         //***********************************************************************************************
             //Reads in items from the Items.txt file and adds them into the list of items in the world.
-            ((Grid)(WORLD.getGameGrids().get(0))).setNorth(((Grid)(WORLD.getGameGrids().get(1))));
-            ((Grid)(WORLD.getGameGrids().get(1))).setSouth(((Grid)(WORLD.getGameGrids().get(0))));
             File playerFile = new File(LOADSAVE + playerName + ".txt"); 
             BufferedReader textBuffer = new BufferedReader(new FileReader(playerFile)); 
             String currentLine = "";
@@ -613,7 +783,7 @@ public class TextBasedRPG
                     Integer.parseInt(lineBreakDown[2]), Integer.parseInt(lineBreakDown[3]),
                     stats, Integer.parseInt(lineBreakDown[5]), equipment, 
                     Integer.parseInt(lineBreakDown[7]), Integer.parseInt(lineBreakDown[8]),
-                    Integer.parseInt(lineBreakDown[9]));
+                    Integer.parseInt(lineBreakDown[9]), Integer.parseInt(lineBreakDown[10]));
             //***********************************************************************************************
     }
     
@@ -669,6 +839,7 @@ public class TextBasedRPG
         fileStream.println(currentPlayer.getPlayerLocation());
         fileStream.println(currentPlayer.getPlayerMaxHealth());
         fileStream.println(0);
+        fileStream.println(currentPlayer.getCurrency());
         fileStream.flush();
         fileStream.close();
     }
@@ -688,23 +859,23 @@ public class TextBasedRPG
         switch(subCommandIndex)
         {
             case 0:
-                    System.out.printf(currentPlayer.getQuestLog().getCurrentQuests());
+                    textArea.appendText(String.format(currentPlayer.getQuestLog().getCurrentQuests()));
                 break;
             case 1:
-                    System.out.printf(currentPlayer.getQuestLog().getCompletedQuests());
+                    textArea.appendText(String.format(currentPlayer.getQuestLog().getCompletedQuests()));
                 break;
             case 2:
                     if(command.split(" ").length > 2)
-                        System.out.printf(currentPlayer.getQuestLog().getQuestDetails(command.split(" ")[2], WORLD));
+                        textArea.appendText(String.format(currentPlayer.getQuestLog().getQuestDetails(command.split(" ")[2], WORLD)));
                     else
                     {
-                        System.out.printf("No quest Name Was Input.\n\n", subCommand);
-                        System.out.printf(new HELP_COMMAND("HELP QUEST", true).printOutput()); 
+                        textArea.appendText("No quest Name Was Input.\n");
+                        textArea.appendText(new HELP_COMMAND("HELP QUEST", true).printOutput()); 
                     }
                 break;
             default:
-                System.out.printf("%s is not a valid sub-command of quest.\n\n", subCommand);
-                System.out.printf(new HELP_COMMAND("HELP QUEST", true).printOutput()); 
+                textArea.appendText(String.format("%s is not a valid sub-command of quest.\n", subCommand));
+                textArea.appendText(new HELP_COMMAND("HELP QUEST", true).printOutput()); 
         }
     }
     
@@ -724,8 +895,8 @@ public class TextBasedRPG
                     currentPlayer.setTarget(currentPlayer.getTarget() + 1);
                 break;
             default:
-                System.out.printf("%s is not a valid sub-command of target.\n\n", subCommand);
-                System.out.printf(new HELP_COMMAND("HELP TARGET", true).printOutput()); 
+                textArea.appendText(String.format("%s is not a valid sub-command of target.\n", subCommand));
+                textArea.appendText(new HELP_COMMAND("HELP TARGET", true).printOutput()); 
         }
     }
     
@@ -750,14 +921,53 @@ public class TextBasedRPG
                     if(command.split(" ").length > 2)
                     {
                         npcs = ((NPC [])(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getPeople()));
-                        for(int indexNPCs = 0; indexNPCs < npcs.length; indexNPCs++)
-                            if(command.split(" ")[3].equalsIgnoreCase(npcs[indexNPCs].getName()))
-                                System.out.printf(npcs[indexNPCs].getDialogue() + "\n");
+                        if(command.split(" ").length == 3)
+                        {
+                            for(int indexNPCs = 0; indexNPCs < npcs.length; indexNPCs++)
+                            {
+                                if(npcs[indexNPCs] != null && command.split(" ")[2].equalsIgnoreCase(npcs[indexNPCs].getName()))
+                                    textArea.appendText(npcs[indexNPCs].getDialogue() + "\n");
+                                else
+                                {
+                                    textArea.appendText("There is no NPC named that.\n");
+                                    textArea.appendText(new HELP_COMMAND("HELP NPC", true).printOutput()); 
+                                }
+                            }
+                        }
+                        else if (command.split(" ").length > 3)
+                        {
+                            String name = "";
+                            for(int indexName = 2; indexName < command.split(" ").length; indexName++)
+                            {
+                                if(indexName == 2)
+                                    name += command.split(" ")[indexName];
+                                else
+                                    name += " " + command.split(" ")[indexName];
+                            }
+                            for(int indexNPCs = 0; indexNPCs < npcs.length; indexNPCs++)
+                            {
+                                if(npcs[indexNPCs] != null && name.equalsIgnoreCase(npcs[indexNPCs].getName()))
+                                {
+                                    textArea.appendText(npcs[indexNPCs].getDialogue() + "\n");
+                                    break;
+                                }
+                                else if(indexNPCs == npcs.length - 1)
+                                {
+                                    textArea.appendText("There is no NPC named that.\n");
+                                    textArea.appendText(new HELP_COMMAND("HELP NPC", true).printOutput()); 
+                                }
+                            }
+                        }
+                        else
+                        {
+                            textArea.appendText("There is no NPC named that.\n");
+                            textArea.appendText(new HELP_COMMAND("HELP NPC", true).printOutput()); 
+                        }
                     }
                     else
                     {
-                        System.out.printf("There is no NPC named that.\n\n", subCommand);
-                        System.out.printf(new HELP_COMMAND("HELP NPC", true).printOutput()); 
+                        textArea.appendText("There is no NPC named that.\n");
+                        textArea.appendText(new HELP_COMMAND("HELP NPC", true).printOutput()); 
                     }
                         
                 break;
@@ -765,102 +975,317 @@ public class TextBasedRPG
                     if(command.split(" ").length > 2)
                     {
                         npcs = ((NPC [])(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getPeople()));
-                        for(int indexNPCs = 0; indexNPCs < npcs.length; indexNPCs++)
+                        if(command.split(" ").length == 3)
                         {
-                            if(command.split(" ")[3].equalsIgnoreCase(npcs[indexNPCs].getName()) && npcs[indexNPCs].isShopKeeper())
-                                System.out.printf(((Inventory)(npcs[indexNPCs].getInventory())).list());
-                            else
-                                System.out.printf("This NPC is not a shop\n");
+                            for(int indexNPCs = 0; indexNPCs < npcs.length; indexNPCs++)
+                            {
+                                if(npcs[indexNPCs] != null && command.split(" ")[2].equalsIgnoreCase(npcs[indexNPCs].getName()) && npcs[indexNPCs].isShopKeeper())
+                                {
+                                    textArea.appendText(((Inventory)(npcs[indexNPCs].getInventory())).list());
+                                    break;
+                                }
+                                else if(indexNPCs == npcs.length - 1)
+                                {
+                                    textArea.appendText("There is no NPC named that.\n");
+                                    textArea.appendText(new HELP_COMMAND("HELP NPC", true).printOutput()); 
+                                }
+                            }
                         }
+                        else if (command.split(" ").length > 3)
+                        {
+                            String name = "";
+                            for(int indexName = 2; indexName < command.split(" ").length; indexName++)
+                            {
+                                if(indexName == 2)
+                                    name += command.split(" ")[indexName];
+                                else
+                                    name += " " + command.split(" ")[indexName];
+                            }
+                            for(int indexNPCs = 0; indexNPCs < npcs.length; indexNPCs++)
+                            {
+                                if(npcs[indexNPCs] != null && name.equalsIgnoreCase(npcs[indexNPCs].getName()) && npcs[indexNPCs].isShopKeeper())
+                                {
+                                    textArea.appendText(((Inventory)(npcs[indexNPCs].getInventory())).list());
+                                    break;
+                                }
+                                else if(indexNPCs == npcs.length - 1)
+                                {
+                                    textArea.appendText("There is no NPC named that.\n");
+                                    textArea.appendText(new HELP_COMMAND("HELP NPC", true).printOutput()); 
+                                }
+                            }
+                        }  
                     }
                     else
                     {
-                        System.out.printf("There is no NPC named that.\n\n", subCommand);
-                        System.out.printf(new HELP_COMMAND("HELP NPC", true).printOutput()); 
+                        textArea.appendText("There is no NPC named that.\n");
+                        textArea.appendText(new HELP_COMMAND("HELP NPC", true).printOutput()); 
                     }
                 break;
             case 2:
                     if(command.split(" ").length > 2)
                     {
                         npcs = ((NPC [])(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getPeople()));
-                        for(int indexNPCs = 0; indexNPCs < npcs.length; indexNPCs++)
+                        if(command.split(" ").length == 3)
                         {
-                            if(command.split(" ")[3].equalsIgnoreCase(npcs[indexNPCs].getName()))
+                            for(int indexNPCs = 0; indexNPCs < npcs.length; indexNPCs++)
                             {
-                                for(int indexNPCQuest = 0; indexNPCQuest < npcs[indexNPCs].getLinkedQuest().length; indexNPCQuest++)
+                                if(npcs[indexNPCs] != null && command.split(" ")[3].equalsIgnoreCase(npcs[indexNPCs].getName()))
                                 {
-                                    for(int indexPlayerQuest = 0; indexPlayerQuest < currentPlayer.getQuestLog().getActiveQuest().length; indexPlayerQuest++)
+                                    for(int indexNPCQuest = 0; indexNPCQuest < npcs[indexNPCs].getLinkedQuest().length; indexNPCQuest++)
                                     {
-                                        if((npcs[indexNPCs].getLinkedQuest()[indexNPCQuest]) == ((Quest[])(currentPlayer.getQuestLog().getActiveQuest()))[indexPlayerQuest].getQuestID())
-                                            System.out.printf(npcs[indexNPCs].getQuestDialogue()[indexNPCs] + "\n");
+                                        for(int indexPlayerQuest = 0; indexPlayerQuest < currentPlayer.getQuestLog().getActiveQuest().length; indexPlayerQuest++)
+                                        {
+                                            if((npcs[indexNPCs].getLinkedQuest()[indexNPCQuest]) == ((Quest[])(currentPlayer.getQuestLog().getActiveQuest()))[indexPlayerQuest].getQuestID())
+                                                textArea.appendText(npcs[indexNPCs].getQuestDialogue()[indexNPCs] + "\n");
+                                        }
                                     }
+                                    break;
+                                }
+                                else if(indexNPCs == npcs.length - 1)
+                                {
+                                    textArea.appendText("There is no NPC named that.\n");
+                                    textArea.appendText(new HELP_COMMAND("HELP NPC", true).printOutput()); 
                                 }
                             }
-                            else
-                                System.out.printf("You are not on a quest that with this NPC.\n");
+                        }
+                        else if (command.split(" ").length > 3)
+                        {
+                            String name = "";
+                            for(int indexName = 2; indexName < command.split(" ").length; indexName++)
+                            {
+                                if(indexName == 2)
+                                    name += command.split(" ")[indexName];
+                                else
+                                    name += " " + command.split(" ")[indexName];
+                            }
+                            for(int indexNPCs = 0; indexNPCs < npcs.length; indexNPCs++)
+                            {
+                                if(npcs[indexNPCs] != null && name.equalsIgnoreCase(npcs[indexNPCs].getName()))
+                                {
+                                    for(int indexNPCQuest = 0; indexNPCQuest < npcs[indexNPCs].getLinkedQuest().length; indexNPCQuest++)
+                                    {
+                                        for(int indexPlayerQuest = 0; indexPlayerQuest < currentPlayer.getQuestLog().getActiveQuest().length; indexPlayerQuest++)
+                                        {
+                                            if((npcs[indexNPCs].getLinkedQuest()[indexNPCQuest]) == ((Quest[])(currentPlayer.getQuestLog().getActiveQuest()))[indexPlayerQuest].getQuestID())
+                                                textArea.appendText(npcs[indexNPCs].getQuestDialogue()[indexNPCs] + "\n");
+                                        }
+                                    }
+                                    break;
+                                }
+                                else if(indexNPCs == npcs.length - 1)
+                                {
+                                    textArea.appendText("There is no NPC named that.\n");
+                                    textArea.appendText(new HELP_COMMAND("HELP NPC", true).printOutput()); 
+                                }
+                            }
+                        }
+                        else
+                        {
+                            textArea.appendText("There is no NPC named that.\n");
+                            textArea.appendText(new HELP_COMMAND("HELP NPC", true).printOutput()); 
                         }
                     }
                     else
                     {
-                        System.out.printf("There is no NPC named that.\n\n", subCommand);
-                        System.out.printf(new HELP_COMMAND("HELP NPC", true).printOutput()); 
+                        textArea.appendText("There is no NPC named that.\n");
+                        textArea.appendText(new HELP_COMMAND("HELP NPC", true).printOutput()); 
                     }
                 break;
             case 3:
                     if(command.split(" ").length > 2)
                     {
                         npcs = ((NPC [])(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getPeople()));
-                        for(int indexNPCs = 0; indexNPCs < npcs.length; indexNPCs++)
-                            if(command.split(" ")[3].equalsIgnoreCase(npcs[indexNPCs].getName()) && command.split(" ").length > 3)
+                        if(command.split(" ").length == 3)
+                        {
+                            for(int indexNPCs = 0; indexNPCs < npcs.length; indexNPCs++)
                             {
-                                for(int indexItem = 0; indexItem < 100; indexItem++)
+                                if(npcs[indexNPCs] != null &&  command.split(" ")[3].split(":")[0].equalsIgnoreCase(npcs[indexNPCs].getName()) && command.split(" ")[3].split(":").length > 1)
                                 {
-                                    if(npcs[indexNPCs].hasItemInShop(command.split(" ")[4]))
-                                        currentPlayer.getInventory().addItem((Item)(WORLD.getGameItems().get(npcs[indexNPCs].buyItemFromShop(command.split(" ")[4]))));
+                                    String itemName = "";
+                                    for(int indexName = 1; indexName < command.split(" ")[3].split(":").length; indexName++)
+                                    {
+                                        if(indexName == 1)
+                                            itemName += command.split(" ")[3].split(":")[indexName];
+                                        else
+                                            itemName += " " + command.split(" ")[3].split(":")[indexName];
+                                    }
+                                    if(npcs[indexNPCs].hasItemInShop(itemName))
+                                    {
+                                        if(((Item)(WORLD.getGameItems().get(currentPlayer.getInventory().getItemIDByName(itemName)))).getValue() < currentPlayer.getCurrency())
+                                        {
+                                            currentPlayer.useCurrency(((Item)(WORLD.getGameItems().get(currentPlayer.getInventory().getItemIDByName(itemName)))).getValue() * 3);
+                                            currentPlayer.getInventory().addItem((Item)(WORLD.getGameItems().get(npcs[indexNPCs].buyItemFromShop(itemName, textArea))));
+                                            textArea.appendText(String.format("You have bought: %s\n", itemName));
+                                        }
+                                        else
+                                        {
+                                            textArea.appendText(String.format("You do not have the money to buy: %s cost %d\n", itemName, ((Item)(WORLD.getGameItems().get(currentPlayer.getInventory().getItemIDByName(itemName)))).getValue()));
+                                        }
+                                    }
                                     else
-                                        System.out.printf("There is no item named that in this shop.\n\n", subCommand);
+                                        textArea.appendText(String.format("No item %s found in this shop\n", itemName));
+                                    break;
+                                }
+                                else if(indexNPCs == npcs.length - 1)
+                                {
+                                    textArea.appendText("There is no NPC named that.\n");
+                                    textArea.appendText(new HELP_COMMAND("HELP NPC", true).printOutput()); 
+                                }
+                                else if(command.split(" ")[3].split(":").length <= 1)
+                                {
+                                    textArea.appendText("Need to input an item.\n");
+                                    textArea.appendText(new HELP_COMMAND("HELP NPC", true).printOutput()); 
                                 }
                             }
-                            else
+                        }
+                        else if(command.split(" ").length > 3)
+                        {
+                            String name = "";
+                            for(int indexName = 2; indexName < command.split(" ").length; indexName++)
                             {
-                                System.out.printf(new HELP_COMMAND("HELP NPC", true).printOutput()); 
+                                if(indexName == 2)
+                                    name += command.split(" ")[indexName];
+                                else
+                                    name += " " + command.split(" ")[indexName];
                             }
+                            for(int indexNPCs = 0; indexNPCs < npcs.length; indexNPCs++)
+                            {
+                                if(npcs[indexNPCs] != null && name.split(":")[0].equalsIgnoreCase(npcs[indexNPCs].getName()) && name.split(":").length > 1)
+                                {
+                                    String itemName = "";
+                                    for(int indexName = 1; indexName < name.split(":").length; indexName++)
+                                    {
+                                        if(indexName == 1)
+                                            itemName += name.split(":")[indexName];
+                                        else
+                                            itemName += " " + name.split(":")[indexName];
+                                    }
+                                    if(npcs[indexNPCs].hasItemInShop(itemName))
+                                    {
+                                        currentPlayer.useCurrency(((Item)(WORLD.getGameItems().get(currentPlayer.getInventory().getItemIDByName(itemName)))).getValue() * 3);
+                                        currentPlayer.getInventory().addItem((Item)(WORLD.getGameItems().get(npcs[indexNPCs].buyItemFromShop(itemName, textArea))));
+                                        textArea.appendText(String.format("You have bought: %s\n", itemName));
+                                    }
+                                    else
+                                        textArea.appendText(String.format("No item %s found in this shop\n", itemName));
+                                    break;
+                                }
+                                else if(indexNPCs == npcs.length - 1)
+                                {
+                                    textArea.appendText("There is no NPC named that.\n");
+                                    textArea.appendText(new HELP_COMMAND("HELP NPC", true).printOutput()); 
+                                }
+                                else if(name.split(":").length <= 1)
+                                {
+                                    textArea.appendText("Need to input an item.\n");
+                                    textArea.appendText(new HELP_COMMAND("HELP NPC", true).printOutput()); 
+                                }
+                            }
+                        }
                     }
                     else
                     {
-                        System.out.printf("There is no NPC named that.\n\n", subCommand);
-                        System.out.printf(new HELP_COMMAND("HELP NPC", true).printOutput()); 
+                        textArea.appendText("There is no NPC named that.\n");
+                        textArea.appendText(new HELP_COMMAND("HELP NPC", true).printOutput()); 
                     }
                 break;
             case 4:
-                    if(command.split(" ").length > 2)
+                if(command.split(" ").length > 2)
                     {
                         npcs = ((NPC [])(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getPeople()));
-                        for(int indexNPCs = 0; indexNPCs < npcs.length; indexNPCs++)
-                            if(command.split(" ")[3].equalsIgnoreCase(npcs[indexNPCs].getName()) && command.split(" ").length > 3)
+                        if(command.split(" ").length == 3)
+                        {
+                            for(int indexNPCs = 0; indexNPCs < npcs.length; indexNPCs++)
                             {
-                                for(int indexItem = 0; indexItem < 100; indexItem++)
+                                if(npcs[indexNPCs] != null && command.split(" ")[2].split(":")[0].equalsIgnoreCase(npcs[indexNPCs].getName()) && command.split(" ")[2].split(":").length > 1)
                                 {
-                                    if(currentPlayer.hasItemInShop(command.split(" ")[4]))
-                                        npcs[indexNPCs].getInventory().addItem((Item)(WORLD.getGameItems().get(currentPlayer.sellItemToShop(command.split(" ")[4]))));
+                                    String itemName = "";
+                                    for(int indexName = 1; indexName < command.split(" ")[3].split(":").length; indexName++)
+                                    {
+                                        if(indexName == 1)
+                                            itemName += command.split(" ")[3].split(":")[indexName];
+                                        else
+                                            itemName += " " + command.split(" ")[3].split(":")[indexName];
+                                    }
+                                    if(currentPlayer.hasItemInShop(itemName))
+                                    {
+                                        currentPlayer.gainCurrency(((Item)(WORLD.getGameItems().get(currentPlayer.getInventory().getItemIDByName(itemName)))).getValue());
+                                        npcs[indexNPCs].getInventory().addItem((Item)(WORLD.getGameItems().get(currentPlayer.sellItemToShop(itemName, textArea))));
+                                        textArea.appendText(String.format("You have sold: %s\n", itemName));
+                                    }
                                     else
-                                        System.out.printf("There is no item named that in this shop.\n\n", subCommand);
+                                        textArea.appendText(String.format("No item %s found in your inventory\n", itemName));
+                                    break;
+                                }
+                                else if(indexNPCs == npcs.length - 1)
+                                {
+                                    textArea.appendText("There is no NPC named that.\n");
+                                    textArea.appendText(new HELP_COMMAND("HELP NPC", true).printOutput()); 
+                                }
+                                else if (command.split(" ")[2].split(":").length > 1)
+                                {
+                                    textArea.appendText("Need to input an item.\n");
+                                    textArea.appendText(new HELP_COMMAND("HELP NPC", true).printOutput()); 
+                                    break;
                                 }
                             }
-                            else
+                        }
+                        else if(command.split(" ").length > 3)
+                        {
+                            String name = "";
+                            for(int indexName = 2; indexName < command.split(" ").length; indexName++)
                             {
-                                System.out.printf(new HELP_COMMAND("HELP NPC", true).printOutput()); 
+                                if(indexName == 2)
+                                    name += command.split(" ")[indexName];
+                                else
+                                    name += " " + command.split(" ")[indexName];
                             }
+                            for(int indexNPCs = 0; indexNPCs < npcs.length; indexNPCs++)
+                            {
+                                if(npcs[indexNPCs] != null && name.split(":")[0].equalsIgnoreCase(npcs[indexNPCs].getName()) && name.split(":").length > 1)
+                                {
+                                    String itemName = "";
+                                    for(int indexName = 1; indexName < name.split(":").length; indexName++)
+                                    {
+                                        if(indexName == 1)
+                                            itemName += name.split(":")[indexName];
+                                        else
+                                            itemName += " " + name.split(":")[indexName];
+                                    }
+                                    if(currentPlayer.hasItemInShop(itemName))
+                                    {
+                                        currentPlayer.gainCurrency(((Item)(WORLD.getGameItems().get(currentPlayer.getInventory().getItemIDByName(itemName)))).getValue());
+                                        npcs[indexNPCs].getInventory().addItem((Item)(WORLD.getGameItems().get(currentPlayer.sellItemToShop(itemName, textArea))));
+                                        textArea.appendText(String.format("You have sold: %s\n", itemName));
+                                    }
+                                    else
+                                        textArea.appendText(String.format("No item %s found in your inventory\n", itemName));
+                                    break;
+                                }
+                                else if(indexNPCs == npcs.length - 1)
+                                {
+                                    textArea.appendText("There is no NPC named that.\n");
+                                    textArea.appendText(new HELP_COMMAND("HELP NPC", true).printOutput()); 
+                                }
+                                else if (name.split(":").length > 1)
+                                {
+                                    textArea.appendText("Need to input an item.\n");
+                                    textArea.appendText(new HELP_COMMAND("HELP NPC", true).printOutput()); 
+                                    break;
+                                }
+                            }
+                        }
                     }
                     else
                     {
-                        System.out.printf("There is no NPC named that.\n\n", subCommand);
-                        System.out.printf(new HELP_COMMAND("HELP NPC", true).printOutput()); 
+                        textArea.appendText("There is no NPC named that.\n");
+                        textArea.appendText(new HELP_COMMAND("HELP NPC", true).printOutput()); 
                     }
                 break;
             default:
-                System.out.printf("%s is not a valid sub-command of NPC.\n\n", subCommand);
-                System.out.printf(new HELP_COMMAND("HELP NPC", true).printOutput()); 
+                textArea.appendText(String.format("%s is not a valid sub-command of NPC.\n", subCommand));
+                textArea.appendText(new HELP_COMMAND("HELP NPC", true).printOutput()); 
         }
     }
     
@@ -883,11 +1308,11 @@ public class TextBasedRPG
         switch(subCommandIndex)
         {
             case 0:
-                    System.out.printf(currentPlayer.getInventory().list());
+                    textArea.appendText(currentPlayer.getInventory().list());
                 break;
             case 1:
                     if(command.split(" ").length == 3)
-                        System.out.printf(currentPlayer.getInventory().viewItemByName(command.split(" ")[2]));
+                        textArea.appendText(currentPlayer.getInventory().viewItemByName(command.split(" ")[2]));
                     else if (command.split(" ").length > 3)
                     {
                         String name = "";
@@ -898,17 +1323,17 @@ public class TextBasedRPG
                             else
                                 name += " " + command.split(" ")[indexName];
                         }
-                        System.out.printf(currentPlayer.getInventory().viewItemByName(name));
+                        textArea.appendText(currentPlayer.getInventory().viewItemByName(name));
                     }  
                     else
                     {
-                        System.out.printf("No Item Name Was Input.\n\n");
-                        System.out.printf(new HELP_COMMAND("HELP INVENTORY", true).printOutput()); 
+                        textArea.appendText("No Item Name Was Input.\n");
+                        textArea.appendText(new HELP_COMMAND("HELP INVENTORY", true).printOutput()); 
                     }
                 break;
             case 2:
                     if(command.split(" ").length == 3)
-                        System.out.printf(currentPlayer.getInventory().useItemByName(command.split(" ")[2], currentPlayer));
+                        textArea.appendText(currentPlayer.getInventory().useItemByName(command.split(" ")[2], currentPlayer, textArea));
                     else if (command.split(" ").length > 3)
                     {
                         String name = "";
@@ -919,17 +1344,17 @@ public class TextBasedRPG
                             else
                                 name += " " + command.split(" ")[indexName];
                         }
-                        System.out.printf(currentPlayer.getInventory().useItemByName(name, currentPlayer) + "\n");
+                        textArea.appendText(currentPlayer.getInventory().useItemByName(name, currentPlayer, textArea) + "\n");
                     }       
                     else
                     {
-                        System.out.printf("No Item Name Was Input.\n\n");
-                        System.out.printf(new HELP_COMMAND("HELP INVENTORY", true).printOutput()); 
+                        textArea.appendText("No Item Name Was Input.\n");
+                        textArea.appendText(new HELP_COMMAND("HELP INVENTORY", true).printOutput()); 
                     }
                 break;
             case 3:
                     if(command.split(" ").length == 3)
-                        currentPlayer.getInventory().removeItemByName(command.split(" ")[2]);
+                        currentPlayer.getInventory().removeItemByName(command.split(" ")[2],currentPlayer, textArea);
                     else if (command.split(" ").length > 3)
                     {
                         String name = "";
@@ -940,17 +1365,17 @@ public class TextBasedRPG
                             else
                                 name += " " + command.split(" ")[indexName];
                         }
-                        currentPlayer.getInventory().removeItemByName(name);
+                        currentPlayer.getInventory().removeItemByName(name,currentPlayer, textArea);
                     }
                     else
                     {
-                        System.out.printf("No Item Name Was Input.\n\n");
-                        System.out.printf(new HELP_COMMAND("HELP INVENTORY", true).printOutput()); 
+                        textArea.appendText("No Item Name Was Input.\n");
+                        textArea.appendText(new HELP_COMMAND("HELP INVENTORY", true).printOutput()); 
                     }
                 break;
             case 4:
                     if(command.split(" ").length == 3)
-                         System.out.printf(currentPlayer.getInventory().equipItemByName(command.split(" ")[2], currentPlayer));
+                         textArea.appendText(currentPlayer.getInventory().equipItemByName(command.split(" ")[2], currentPlayer));
                     else if (command.split(" ").length > 3)
                     {
                         String name = "";
@@ -961,17 +1386,17 @@ public class TextBasedRPG
                             else
                                 name += " " + command.split(" ")[indexName];
                         }
-                        System.out.printf(currentPlayer.getInventory().equipItemByName(name, currentPlayer));
+                        textArea.appendText(currentPlayer.getInventory().equipItemByName(name, currentPlayer));
                     } 
                     else
                     {
-                        System.out.printf("No Item Name Was Input.\n\n");
-                        System.out.printf(new HELP_COMMAND("HELP INVENTORY", true).printOutput()); 
+                        textArea.appendText("No Item Name Was Input.\n");
+                        textArea.appendText(new HELP_COMMAND("HELP INVENTORY", true).printOutput()); 
                     }
                 break;
             case 5:
                     if(command.split(" ").length == 3)
-                         System.out.printf(currentPlayer.getInventory().unequipItemByName(command.split(" ")[2], currentPlayer));
+                         textArea.appendText(currentPlayer.getInventory().unequipItemByName(command.split(" ")[2], currentPlayer));
                     else if (command.split(" ").length > 3)
                     {
                         String name = "";
@@ -982,20 +1407,20 @@ public class TextBasedRPG
                             else
                                 name += " " + command.split(" ")[indexName];
                         }
-                        System.out.printf(currentPlayer.getInventory().unequipItemByName(name, currentPlayer));
+                        textArea.appendText(currentPlayer.getInventory().unequipItemByName(name, currentPlayer));
                     } 
                     else
                     {
-                        System.out.printf("No Item Name Was Input.\n\n");
-                        System.out.printf(new HELP_COMMAND("HELP INVENTORY", true).printOutput()); 
+                        textArea.appendText("No Item Name Was Input.\n");
+                        textArea.appendText(new HELP_COMMAND("HELP INVENTORY", true).printOutput()); 
                     }
                 break;    
             case 6:
-                    currentPlayer.getInventory().checkEquipedItems(currentPlayer);
+                    currentPlayer.getInventory().checkEquipedItems(currentPlayer, textArea);
                 break;
             default:
-                System.out.printf("%s is not a valid sub-command of inventory.\n\n", subCommand);
-                System.out.printf(new HELP_COMMAND("HELP INVENTORY", true).printOutput()); 
+                textArea.appendText(String.format("%s is not a valid sub-command of inventory.\n", subCommand));
+                textArea.appendText(new HELP_COMMAND("HELP INVENTORY", true).printOutput()); 
         }
     }
     
@@ -1023,139 +1448,344 @@ public class TextBasedRPG
                         !(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getNorth().getTransitFromSouth().equalsIgnoreCase("Block")))
                 {
                     currentPlayer.setPlayerLocation(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getNorth().getGridID());
-                    System.out.printf("%s:\n\t%s\n\n",
+                    textArea.appendText(String.format("%s:\n\t%s\n%s\n",
                             ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getLocationName(),
-                            ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getDetails());
+                            ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getDetails(),
+                            ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).searchArea()));
                 }
                 else
-                     System.out.printf("There is no path in that direction.\n\n");
+                     textArea.appendText("There is no path in that direction.\n");
                 break;
             case 1:
                 if(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getEast() != null &&
                         !(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getEast().getTransitFromWest().equalsIgnoreCase("Block")))
                 {
                     currentPlayer.setPlayerLocation(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getEast().getGridID());
-                    System.out.printf("%s:\n\t%s\n\n",
+                    textArea.appendText(String.format("%s:\n\t%s\n%s\n",
                             ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getLocationName(),
-                            ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getDetails());
+                            ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getDetails(),
+                            ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).searchArea()));
                 }
                 else
-                     System.out.printf("There is no path in that direction.\n\n");
+                     textArea.appendText("There is no path in that direction.\n");
                 break;
             case 2:
                 if(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getSouth() != null &&
                         !(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getSouth().getTransitFromNorth().equalsIgnoreCase("Block")))
                 {
                     currentPlayer.setPlayerLocation(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getSouth().getGridID());
-                    System.out.printf("%s:\n\t%s\n\n",
+                    textArea.appendText(String.format("%s:\n\t%s\n%s\n",
                             ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getLocationName(),
-                            ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getDetails());
+                            ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getDetails(),
+                            ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).searchArea()));
                 }
                 else
-                     System.out.printf("There is no path in that direction.\n\n");
+                     textArea.appendText("There is no path in that direction.\n");
                 break;
             case 3:
                 if(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getWest() != null &&
                         !(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getWest().getTransitFromEast().equalsIgnoreCase("Block")))
                 {
                     currentPlayer.setPlayerLocation(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getWest().getGridID());
-                    System.out.printf("%s:\n\t%s\n\n",
+                    textArea.appendText(String.format("%s:\n\t%s\n%s\n",
                             ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getLocationName(),
-                            ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getDetails());
+                            ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getDetails(),
+                            ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).searchArea()));
                 }
                 else
-                     System.out.printf("There is no path in that direction.\n\n");
+                     textArea.appendText("There is no path in that direction.\n");
                 break;
             case 4:
                 if(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getNorthEast() != null &&
                         !(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getNorthEast().getTransitFromSouthWest()).equalsIgnoreCase("Block"))
                 {
                     currentPlayer.setPlayerLocation(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getNorthEast().getGridID());
-                    System.out.printf("%s:\n\t%s\n\n",
+                    textArea.appendText(String.format("%s:\n\t%s\n%s\n",
                             ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getLocationName(),
-                            ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getDetails());
+                            ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getDetails(),
+                            ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).searchArea()));
                 }
                 else
-                     System.out.printf("There is no path in that direction.\n\n");
+                     textArea.appendText("There is no path in that direction.\n");
                 break;
             case 5:
                 if(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getNorthWest() != null &&
                         !(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getNorthWest().getTransitFromSouthEast()).equalsIgnoreCase("Block"))
                 {
                     currentPlayer.setPlayerLocation(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getNorthWest().getGridID());
-                    System.out.printf("%s:\n\t%s\n\n",
+                    textArea.appendText(String.format("%s:\n\t%s\n%s\n",
                             ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getLocationName(),
-                            ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getDetails());
+                            ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getDetails(),
+                            ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).searchArea()));
                 }
                 else
-                     System.out.printf("There is no path in that direction.\n\n");
+                     textArea.appendText("There is no path in that direction.\n");
                 break;
             case 6:
                 if(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getSouthEast() != null &&
                         !(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getSouthEast().getTransitFromNorthWest()).equalsIgnoreCase("Block"))
                 {
                     currentPlayer.setPlayerLocation(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getSouthEast().getGridID());
-                    System.out.printf("%s:\n\t%s\n\n",
+                    textArea.appendText(String.format("%s:\n\t%s\n%s\n",
                             ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getLocationName(),
-                            ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getDetails());
+                            ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getDetails(),
+                            ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).searchArea()));
                 }
                 else
-                     System.out.printf("There is no path in that direction.\n\n");
+                     textArea.appendText("There is no path in that direction.\n");
                 break;
             case 7:
                 if(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getSouthWest() != null &&
                         !(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getSouthWest().getTransitFromNorthEast()).equalsIgnoreCase("Block"))
                 {
                     currentPlayer.setPlayerLocation(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getSouthWest().getGridID());
-                    System.out.printf("%s:\n\t%s\n\n",
+                    textArea.appendText(String.format("%s:\n\t%s\n%s\n",
                             ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getLocationName(),
-                            ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getDetails());
+                            ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getDetails(),
+                            ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).searchArea()));
                 }
                 else
-                     System.out.printf("There is no path in that direction.\n\n");
+                     textArea.appendText("There is no path in that direction.\n");
                 break;
             default:
-                System.out.printf("%s is not a valid sub-command of Move.\n\n", subCommand);
-                System.out.printf(new HELP_COMMAND("HELP TARGET", true).printOutput()); 
+                textArea.appendText(String.format("%s is not a valid sub-command of Move.\n", subCommand));
+                textArea.appendText(new HELP_COMMAND("HELP MOVE", true).printOutput()); 
         }
     }
     
     private static void attack(String command)
     {
-        String subCommand = command.split(" ")[1].toUpperCase();
+        boolean playerdead = false;
+        String subCommand = "";
+        for(int indexName = 1; indexName < command.split(" ").length; indexName++)
+        {
+            if(indexName == 1)
+                subCommand += command.split(" ")[indexName];
+            else
+                subCommand += " " + command.split(" ")[indexName];
+        }
+        subCommand = subCommand.toUpperCase();
+        
         Creature [] currentCreatures = ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getCreatures();
         Creature currentCreature = null;
-        for(int indexCreatures = 0; indexCreatures < currentCreatures.length; indexCreatures++)
-            currentCreature = currentCreatures[indexCreatures];
-            if(currentCreature.getName().equalsIgnoreCase(subCommand) && !currentCreature.isIsdead())
+        if(currentCreatures[currentPlayer.getTarget()] != null && !(currentCreatures[currentPlayer.getTarget()].isIsdead()) && currentCreatures[currentPlayer.getTarget()].getName().equalsIgnoreCase(subCommand))
+        {
+            currentCreature = currentCreatures[currentPlayer.getTarget()];
+        }
+        else
+        {
+            currentCreature = null;
+            for(int indexCreatures = 0; indexCreatures < currentCreatures.length; indexCreatures++)
             {
-                int hit = (int)(Math.random()*1 + .2);
-                if(hit == 1)
+                if(currentCreatures[currentPlayer.getTarget()] != null && currentCreatures[indexCreatures].getName().equalsIgnoreCase(subCommand) && !(currentCreatures[indexCreatures].isIsdead()))
                 {
-                    currentPlayer.takeDamage(currentCreature.getAttack());
-                    System.out.printf("Your Health %d/%d\n", currentPlayer.getPlayerHealth(),currentPlayer.getPlayerMaxHealth());
+                    currentPlayer.setTarget(indexCreatures);
+                    currentCreature = currentCreatures[indexCreatures];
+                    break;
                 }
+            }
+        }
+        if(currentCreature != null &&  currentCreature.getName().equalsIgnoreCase(subCommand) && !currentCreature.isIsdead())
+        {
+            int hit = (int)(Math.random()*1 + (.7) + ((.1)*(currentCreature.getLevel() - currentPlayer.getPlayerLevel())));
+            if(hit == 1)
+            {
+                currentPlayer.takeDamage(currentCreature.getAttack(), textArea, INPUT, WORLD);
+                if(currentPlayer.getPlayerHealth() > 0 )
+                    textArea.appendText(String.format("Your Health %d/%d\n", currentPlayer.getPlayerHealth(),currentPlayer.getPlayerMaxHealth()));
                 else
-                    System.out.printf("The %s missed.\n", currentCreature.getName());
-                int hit2 = (int)(Math.random()*1 + .3);
-                if(hit2 == 1)
-                {
-                    currentCreature.setHealth(currentCreature.getHealth() - Integer.parseInt(currentPlayer.getStats().split(";")[1]), 
-                            currentPlayer, ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))));
-                    System.out.printf("Creature Health %d/%d\n", currentCreature.getHealth(),currentCreature.getMaxHealth());
-                    if(currentCreature.getHealth() == 0)
-                    {
-                        currentPlayer.gainExperience(currentCreature.getXp());
-                        System.out.printf("You gained %d xp from killing a(n) %s\n",currentCreature.getXp(), currentCreature.getName());
-                        System.out.println(currentCreature.getDropTable().toString());
-                    }
-                }
-                else
-                    System.out.printf("You missed the %s\n", currentCreature.getName());
+                    playerdead = true;  
             }
             else
+                textArea.appendText(String.format("The %s missed.\n", currentCreature.getName()));
+            int hit2 = (int)(Math.random()*1 + (.5) + ((.1)*(currentPlayer.getPlayerLevel() - currentCreature.getLevel())));
+            if(hit2 == 1 && !playerdead)
             {
-                System.out.printf("There is no creature by the name %s in this area.\n", command.split(" ")[1]);
+                if(currentPlayer.getPlayerEquipment()[10] != null)
+                {
+                    currentCreature.setHealth(currentCreature.getHealth() - 
+                        currentPlayer.getPlayerEquipment()[10].getDamage((currentPlayer.getPlayerStats()[0]) + (currentPlayer.getPlayerBuffs()[0])), 
+                        currentPlayer, ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))), WORLD, textArea);
+                }
+                else
+                {
+                    currentCreature.setHealth(currentCreature.getHealth() - ((currentPlayer.getPlayerStats()[0]) + (currentPlayer.getPlayerBuffs()[0]))/3, 
+                        currentPlayer, ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))), WORLD, textArea);
+                }
+                if(currentCreature.getHealth() <= 0)
+                {
+                    currentPlayer.gainExperience(currentCreature.getXp(), textArea);
+                }
+                else
+                    textArea.appendText(String.format("Creature Health %d/%d\n", currentCreature.getHealth(),currentCreature.getMaxHealth()));
             }
+            else if(playerdead)
+            {
+                playerdead = false;
+            }
+            else
+                textArea.appendText(String.format("You missed the %s\n", currentCreature.getName()));
+        }
+        else
+        {
+            textArea.appendText(String.format("There is no creature by the name %s in this area.\n", subCommand));
+        }
+    }
+    
+    private static void linkGrids() throws Exception
+    {
+        File connectionsFile = new File(LOADSAVE + "Connections.txt"); 
+        BufferedReader textBuffer = new BufferedReader(new FileReader(connectionsFile)); 
+        String currentLine = "";
+        while (textBuffer.ready()) 
+        {
+            currentLine += textBuffer.readLine() + "#";
+        }
+        String [] lineBreakDown = currentLine.split("#");
+        for(int connectionsIndex = 0; connectionsIndex < lineBreakDown.length; connectionsIndex++)
+        {
+            String [] connectionLinks = lineBreakDown[connectionsIndex].split(" ");
+            if(Integer.parseInt(connectionLinks[1]) != -1)
+                ((Grid)(WORLD.getGameGrids().get(Integer.parseInt(connectionLinks[0])))).setNorth(((Grid)(WORLD.getGameGrids().get(Integer.parseInt(connectionLinks[1])))));
+            if(Integer.parseInt(connectionLinks[2]) != -1)
+                ((Grid)(WORLD.getGameGrids().get(Integer.parseInt(connectionLinks[0])))).setEast(((Grid)(WORLD.getGameGrids().get(Integer.parseInt(connectionLinks[2])))));
+            if(Integer.parseInt(connectionLinks[3]) != -1)
+                ((Grid)(WORLD.getGameGrids().get(Integer.parseInt(connectionLinks[0])))).setSouth(((Grid)(WORLD.getGameGrids().get(Integer.parseInt(connectionLinks[3])))));
+            if(Integer.parseInt(connectionLinks[4]) != -1)
+                ((Grid)(WORLD.getGameGrids().get(Integer.parseInt(connectionLinks[0])))).setWest(((Grid)(WORLD.getGameGrids().get(Integer.parseInt(connectionLinks[4])))));
+           if(Integer.parseInt(connectionLinks[5]) != -1)
+                ((Grid)(WORLD.getGameGrids().get(Integer.parseInt(connectionLinks[0])))).setNorthEast(((Grid)(WORLD.getGameGrids().get(Integer.parseInt(connectionLinks[5])))));
+           if(Integer.parseInt(connectionLinks[6]) != -1)
+                ((Grid)(WORLD.getGameGrids().get(Integer.parseInt(connectionLinks[0])))).setNorthWest(((Grid)(WORLD.getGameGrids().get(Integer.parseInt(connectionLinks[6])))));
+           if(Integer.parseInt(connectionLinks[7]) != -1)
+                ((Grid)(WORLD.getGameGrids().get(Integer.parseInt(connectionLinks[0])))).setSouthEast(((Grid)(WORLD.getGameGrids().get(Integer.parseInt(connectionLinks[7])))));
+           if(Integer.parseInt(connectionLinks[8]) != -1)
+                ((Grid)(WORLD.getGameGrids().get(Integer.parseInt(connectionLinks[0])))).setSouthWest(((Grid)(WORLD.getGameGrids().get(Integer.parseInt(connectionLinks[8])))));
+        }
+    }
+    
+    private static void loot(String command) throws Exception
+    {
+        Map lootCommands = new HashMap();
+        lootCommands.put("SEARCH", 0);
+        lootCommands.put("PICKUP", 1);
+        String subCommand;
+        int subCommandIndex = 25;
+        
+        subCommand = command.split(" ")[1].toUpperCase();
+        if(lootCommands.containsKey(subCommand))
+            subCommandIndex = (int)(lootCommands.get(subCommand));
+        switch(subCommandIndex)
+        {
+            case 0:
+                    Item drops[] = ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getDrops();
+                    if(drops.length >= 1)
+                    {
+                        textArea.appendText("Drops:\n");
+                        for(int indexLoot = 0; indexLoot < drops.length; indexLoot++)
+                            textArea.appendText(String.format("\t%s\n", drops[indexLoot].getItemName()));
+                    }
+                    else
+                        textArea.appendText("There is no items on the ground.\n");
+                break;
+            case 1:
+                    if(command.split(" ").length == 3)
+                    {
+                        Item drop = ((Item)(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).pickUpItem(command.split(" ")[2])));
+                        if(drop != null)
+                        {
+                            if(!(drop instanceof StackableItem))
+                                currentPlayer.getInventory().addItem(drop);
+                            else
+                            {
+                                Item newItem;
+                                if(drop instanceof StackableConsumableItem)
+                                {
+                                    StackableConsumableItem currentItem = ((StackableConsumableItem) (drop));
+                                    newItem = new StackableConsumableItem(currentItem.getItemName(), currentItem.getValue()
+                                            , currentItem.getItemId(), currentItem.getDetails(), currentItem.maxStackAmount(), 
+                                            1,currentItem.getItemEffect(), currentItem.cooldownTimer(),currentItem.getRequirements()); 
+                                }
+                                else
+                                {
+                                    StackableNonconsumableItem currentItem = ((StackableNonconsumableItem)(drop));
+                                    newItem = new StackableNonconsumableItem(currentItem.getItemName(),currentItem.getValue(), 
+                                            currentItem.getItemId(), currentItem.getDetails(), currentItem.maxStackAmount(), 1);
+                                }   
+                                currentPlayer.getInventory().addItem(newItem);
+                            }
+                            textArea.appendText(String.format("Item %s added to your inventory.\n" , drop.getItemName()));
+                            ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).removeItem(command.split(" ")[2]);
+                        }
+                        else
+                            textArea.appendText("There is not item of that name of the ground.\n");
+                    }
+                    else if(command.split(" ").length > 3)
+                    {
+                        String name = "";
+                        for(int indexName = 2; indexName < command.split(" ").length; indexName++)
+                        {
+                            if(indexName == 2)
+                                name += command.split(" ")[indexName];
+                            else
+                                name += " " + command.split(" ")[indexName];
+                        }
+                        Item drop = ((Item)(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).pickUpItem(name)));
+                        if(drop != null)
+                        {
+                            if(!(drop instanceof StackableItem))
+                            {
+                                currentPlayer.getInventory().addItem(drop);
+                            }
+                            else
+                            {
+                                Item newItem;
+                                if(drop instanceof StackableConsumableItem)
+                                {
+                                    StackableConsumableItem currentItem = ((StackableConsumableItem) (drop));
+                                    newItem = new StackableConsumableItem(currentItem.getItemName(), currentItem.getValue()
+                                            , currentItem.getItemId(), currentItem.getDetails(), currentItem.maxStackAmount(), 
+                                            1,currentItem.getItemEffect(), currentItem.cooldownTimer(),currentItem.getRequirements()); 
+                                }
+                                else
+                                {
+                                    StackableNonconsumableItem currentItem = ((StackableNonconsumableItem)(drop));
+                                    newItem = new StackableNonconsumableItem(currentItem.getItemName(),currentItem.getValue(), 
+                                            currentItem.getItemId(), currentItem.getDetails(), currentItem.maxStackAmount(), 1);
+                                }   
+                                currentPlayer.getInventory().addItem(newItem);
+                            }
+                            textArea.appendText(String.format("Item %s added to your inventory.\n" , drop.getItemName()));
+                            ((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).removeItem(name);
+                        }
+                        else
+                            textArea.appendText("There is not item of that name of the ground.\n");
+                    }
+                    else
+                        textArea.appendText("You must put in am item name\n");
+                break;
+            default:
+                textArea.appendText(String.format("%s is not a valid sub-command of Loot.\n", subCommand));
+                textArea.appendText(new HELP_COMMAND("HELP LOOT", true).printOutput()); 
+        }
+    }
+    
+    private static void addToLastText(String command)
+    {
+        boolean existText = false;
+        for(int indexLastText = 0; indexLastText < lastText.length; indexLastText++)
+        {
+            if(lastText[indexLastText].equalsIgnoreCase(command))
+                existText = true;
+        }
+        if(!existText)
+        {
+            String []newLastText = new String[lastText.length + 1];
+            for(int indexLastText = 0; indexLastText < lastText.length; indexLastText++)
+                newLastText[indexLastText] = lastText[indexLastText];
+            newLastText[lastText.length] = command;
+            lastText = newLastText;
+            currentLastTextIndex = lastText.length - 1;
+        }
     }
 }
