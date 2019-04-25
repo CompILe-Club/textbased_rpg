@@ -1,3 +1,5 @@
+import javafx.scene.control.TextArea;
+
 public class QuestLog 
 {
     private Quest activeQuest[];
@@ -69,10 +71,10 @@ public class QuestLog
         return outputString;
     }
     
-    public void checkCurrentQuest(String event, World currentWorld)
+    public void checkCurrentQuest(String event, World currentWorld, TextArea textArea)
     {
         for(int indexQuest = 0; indexQuest < activeQuest.length; indexQuest++)
-            activeQuest[indexQuest].completeObjective(event, currentWorld);
+            activeQuest[indexQuest].completeObjective(event, currentWorld, textArea);
     }
     
     public void trackQuest(String questName, int trackLocation)
