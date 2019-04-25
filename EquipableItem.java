@@ -82,7 +82,7 @@ public class EquipableItem implements Item
     public int getDamage(int str)
     {
         if(isWeapon)
-            return damage * (str/6);
+            return damage + (str/6);
         else
             return 0;
     }
