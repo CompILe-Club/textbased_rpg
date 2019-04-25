@@ -24,9 +24,6 @@ Project Components
     (H) NPC - Noah Rogers - In Progress
         (1) Talk
         (2) Shop - Mat Farley
-    (H) NPC
-        (1) Talk
-        (2) Shop
     (I) Player
         (A) Trade
         (B) Invite
