@@ -360,3 +360,4 @@ public class Player
                     + "\nYou have %d skill points to spend.\n", playerLevel, usableSkillPoints);
         }
     }
+}
