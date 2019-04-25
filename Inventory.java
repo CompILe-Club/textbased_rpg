@@ -1,3 +1,4 @@
+import javafx.scene.control.TextArea;
 //Created By: Daniel August Johnston
 //Author Title: CompILe President (Since Spring 2019)
 //Date of Completion: 14 February 2019
@@ -82,13 +83,20 @@ public class Inventory
             removeNonstackingItem(item);
     }
     
-    public void removeItemByName(String item)
+    public void removeItemByName(String item, TextArea textArea)
     {
         boolean noItem = true;
         for(int indexInventory = 0; indexInventory < inventoryList.length; indexInventory++)
         {
             if(inventoryList[indexInventory].getItemName().equalsIgnoreCase(item))
             {
+                if(inventoryList[indexInventory] instanceof EquipableItem)
+                {
+                    if(((EquipableItem)(inventoryList[indexInventory])).isEquip())
+                    {
+                        ((EquipableItem)(inventoryList[indexInventory])).equip();
+                    }
+                }
                 if(inventoryList[indexInventory] instanceof StackableItem)
                 {
                     removeStackingItem(indexInventory);
@@ -104,7 +112,40 @@ public class Inventory
             }
         }
         if(noItem)
-            System.out.printf ("No Item With That Name Found\n");
+            textArea.appendText("No Item With That Name Found\n");
+    }
+    
+    public void removeItemByName(String item, Player currentPlayer, TextArea textArea)
+    {
+        boolean noItem = true;
+        for(int indexInventory = 0; indexInventory < inventoryList.length; indexInventory++)
+        {
+            if(inventoryList[indexInventory].getItemName().equalsIgnoreCase(item))
+            {
+                if(inventoryList[indexInventory] instanceof EquipableItem)
+                {
+                    if(((EquipableItem)(inventoryList[indexInventory])).isEquip())
+                    {
+                        ((EquipableItem)(inventoryList[indexInventory])).equip();
+                        currentPlayer.unequipItem(((EquipableItem)(inventoryList[indexInventory])));
+                    }
+                }
+                if(inventoryList[indexInventory] instanceof StackableItem)
+                {
+                    removeStackingItem(indexInventory);
+                    noItem = false;
+                    break;
+                }
+                else
+                {
+                    removeNonstackingItem(indexInventory);
+                    noItem = false;
+                    break;
+                }
+            }
+        }
+        if(noItem)
+            textArea.appendText("No Item With That Name Found\n");
     }
     
     //This method makes a new temp inventory with one less space, then clones all 
@@ -140,7 +181,7 @@ public class Inventory
     //of the item if it is or a message that the item is not usable if it is not.
     //It also checks to see if the item is a consumable item if so the comsumable
     //is destoryed on use.
-    public String useItem(int item, Player currentPlayer)
+    public String useItem(int item, Player currentPlayer, TextArea textArea)
     {
         String effect = "No Use Item With That Name Found\n";
         if(inventoryList[item] instanceof UsableItem)
@@ -156,7 +197,7 @@ public class Inventory
                 else if(((UsableItem)inventoryList[item]).getItemEffect().split(":")[0].equalsIgnoreCase("buff"))
                 {
                     currentPlayer.buff(((UsableItem)inventoryList[item]).getItemEffect().split(":")[1].split(";"));
-                    currentPlayer.buff(100000, (System.currentTimeMillis()), inventoryList[item]);
+                    currentPlayer.buff(100000, (System.currentTimeMillis()), inventoryList[item], textArea);
                 }
                 if(((UsableItem)inventoryList[item]).isConsumable())
                     removeItem(item);
@@ -177,10 +218,10 @@ public class Inventory
                 else if(((StackableConsumableItem)inventoryList[item]).getItemEffect().split(":")[0].equalsIgnoreCase("buff"))
                 {
                     currentPlayer.buff(((StackableConsumableItem)inventoryList[item]).getItemEffect().split(":")[1].split(";"));
-                    currentPlayer.buff(100000, (System.currentTimeMillis()), inventoryList[item]);
+                    currentPlayer.buff(100000, (System.currentTimeMillis()), inventoryList[item], textArea);
                 }
                 effect = ((StackableConsumableItem)inventoryList[item]).useEffect();
-                currentPlayer.buff(100000, (System.currentTimeMillis()), inventoryList[item]);
+                currentPlayer.buff(100000, (System.currentTimeMillis()), inventoryList[item], textArea);
                 removeItem(item);
             }
             else
@@ -190,7 +231,7 @@ public class Inventory
         return effect;    
     }
     
-    public String useItemByName(String item, Player currentPlayer)
+    public String useItemByName(String item, Player currentPlayer, TextArea textArea)
     {
         String effect = "No Item With That Name Found\n";
         for(int indexInventory = 0; indexInventory < inventoryList.length; indexInventory++)
@@ -210,7 +251,7 @@ public class Inventory
                         else if(((UsableItem)inventoryList[indexInventory]).getItemEffect().split(":")[0].equalsIgnoreCase("buff"))
                         {
                             currentPlayer.buff(((UsableItem)inventoryList[indexInventory]).getItemEffect().split(":")[1].split(";"));
-                            currentPlayer.buff(100000, (System.currentTimeMillis()), inventoryList[indexInventory]);
+                            currentPlayer.buff(100000, (System.currentTimeMillis()), inventoryList[indexInventory], textArea);
                         }
                         if(((UsableItem)inventoryList[indexInventory]).isConsumable())
                         {
@@ -235,7 +276,7 @@ public class Inventory
                         else if(((StackableConsumableItem)inventoryList[indexInventory]).getItemEffect().split(":")[0].equalsIgnoreCase("buff"))
                         {
                             currentPlayer.buff(((StackableConsumableItem)inventoryList[indexInventory]).getItemEffect().split(":")[1].split(";"));
-                            currentPlayer.buff(100000, (System.currentTimeMillis()), inventoryList[indexInventory]);
+                            currentPlayer.buff(100000, (System.currentTimeMillis()), inventoryList[indexInventory], textArea);
                         }
                         removeItem(indexInventory);
                         break;
@@ -248,9 +289,9 @@ public class Inventory
         return effect;    
     }
     
-    public void checkEquipedItems(Player currentPlayer)
+    public void checkEquipedItems(Player currentPlayer, TextArea textArea)
     {
-        currentPlayer.checkEquipItems();
+        currentPlayer.checkEquipItems(textArea);
     }
     
     //Outputs the information of an item.
@@ -266,6 +307,7 @@ public class Inventory
                         if(currentPlayer.equipItem(((EquipableItem)(inventoryList[indexInventory]))))
                         {
                             ((EquipableItem)(inventoryList[indexInventory])).equip();
+                            currentPlayer.addToStats(((EquipableItem)(inventoryList[indexInventory])).getItemStats());
                             return String.format("%s is now equip\n", inventoryList[indexInventory].getItemName());
                         }
                         else
@@ -293,6 +335,7 @@ public class Inventory
                     {
                         currentPlayer.unequipItem((((EquipableItem)(inventoryList[indexInventory]))));
                         ((EquipableItem)(inventoryList[indexInventory])).equip();
+                        currentPlayer.removeFromStats(((EquipableItem)(inventoryList[indexInventory])).getItemStats());
                         return String.format("%s is now unequip\n", inventoryList[indexInventory].getItemName());     
                     }
                     else
