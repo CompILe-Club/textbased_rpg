@@ -161,6 +161,8 @@ public class TextBasedRPGGameEngine extends Application {
                                         textArea.appendText(new HELP_COMMAND("HELP ATTACK", true).printOutput());
                                 break;
                             case 9:
+                                    textArea.appendText(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getLocationName());
+                                    textArea.appendText(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).getDetails());
                                     textArea.appendText(((Grid)(WORLD.getGameGrids().get(currentPlayer.getPlayerLocation()))).searchArea());
                                 break;
                             case 10:
