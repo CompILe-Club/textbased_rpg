@@ -14,14 +14,13 @@ public class HELP_COMMAND implements Command {
         commands.put("STATUS", 0);
         commands.put("QUEST", 1);
         commands.put("HELP", 2);
-        commands.put("EXIT", 3);
         commands.put("INVENTORY", 4);
-        commands.put("LOCK", 5);
         commands.put("NPC", 6);
         commands.put("MOVE", 7);
         commands.put("ATTACK", 8);
         commands.put("SEARCH", 9);
         commands.put("SAVE", 10);
+        commands.put("LOOT", 11);
         input = cmd;
         tooltips = tt;
     }
@@ -83,9 +82,6 @@ public class HELP_COMMAND implements Command {
                 return help;
             case 2://Help
                 return helpList();
-            case 3://Exit game
-                help = "EXIT exits the game, after prompting the player if they're sure.\n";
-                return help;
             case 4://Inventory
                 help = "INVENTORY displays the contents of the player's inventory, and lets them manage it.\n"
                         + "INVENTORY commands include\n"
@@ -97,18 +93,13 @@ public class HELP_COMMAND implements Command {
                         + "INVENTORY UNEQUIP [item name] allows you to unequip an item that is equipped.\n"
                         + "INVENTORY EQUIPMENT view current equiped items.\n";
                 return help;
-            case 5://Lock Target
-                help = "LOCK sets the player to aim at the specified target.\n"
-                        + "LOCK commands include\n"
-                        + "LOCK NEXTENEMY set your locked target to the next enemy in the area.\n";
-                return help;
             case 6://NPC
                 help = "NPC [action] lets the player interact with NPCs.\n" + 
                         "NPC TALK [Name] activates a dialogue sequence between the player and the NPC.\n" + 
                         "NPC SHOP [Name] let the player see the shop from the NPC, if the option is available.\n" +
                         "NPC QUEST [Name] activates a dialogue sequence between the player and the NPC for a quest.\n" +
-                        "NPC BUY [Name] lets the player buy from the NPC, if the option is available.\n" +
-                        "NPC SELL [Name] lets the player sell to the NPC, if the option is available.\n" ;
+                        "NPC BUY [Name]:[Item Name] lets the player buy from the NPC, if the option is available.\n" +
+                        "NPC SELL [Name]:[Item Name] lets the player sell to the NPC, if the option is available.\n" ;
                 return help;
             case 7://MOVE
                 help = "MOVE [action] lets the player move in the direction they wish.\n" + 
@@ -131,9 +122,14 @@ public class HELP_COMMAND implements Command {
             case 10://SAVE
                 help = "SAVE will save your current state in the world.\n";
                 return help;
+            case 11://LOOT
+                help = "LOOT [action] lets the player do things with loot on the ground.\n" + 
+                       "LOOT SEARCH look for loot on the ground.\n" +
+                       "LOOT PICKUP [item name] get loot on the ground.\n";;
+                return help;
             default:
                 //Tell the user that the command they entered is invalid.
-                help = subCommand + " is not a valid sub-command of help.\n\n" + helpList();
+                help = subCommand + " is not a valid sub-command of help.\n" + helpList();
                 return help;
         }
     }
@@ -153,7 +149,5 @@ public class HELP_COMMAND implements Command {
     String listCommands()
     {
         return commands.keySet().toString() + "\n";
-    }
-
-    
+    }  
 }
