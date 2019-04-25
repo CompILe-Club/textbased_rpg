@@ -1,3 +1,6 @@
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
+
 //Created By: Daniel August Johnston
 //Author Title: CompILe President (Since Spring 2019)
 //Date of Completion: 14 February 2019
@@ -34,12 +37,13 @@ public class Player
     private int respawnLocation;
     private int playerHealth;
     private int target;
+    private int currency;
     private QuestLog questLog;
     
     //Initializing the player based on their chosen name, class from within the main.
     Player(String playerName, Inventory inventory, int playerLevel, int usedSkillPoints, int usableSkillPoints,
             int [] playerStats, int playerExperience, EquipableItem [] playerEquipment, 
-            int playerLocation, int playerHealth, int target)
+            int playerLocation, int playerHealth, int target, int currency)
     {
         this.usedSkillPoints = usedSkillPoints;
         this.playerLevel = playerLevel;
@@ -55,6 +59,32 @@ public class Player
         this.maxPlayerHealth = this.playerHealth = playerHealth;
         this.target = target;
         this.playerBuffs = new int[4];
+        this.currency = currency;
+    }
+    
+    public int getCurrency()
+    {
+        return this.currency;
+    }
+    
+    public int[] getPlayerBuffs()
+    {
+        return this.playerBuffs;
+    }
+    
+    public int[] getPlayerStats()
+    {
+        return this.playerStats;
+    }
+    
+    public void useCurrency(int amount)
+    {
+        this.currency -= amount;
+    }
+    
+    public void gainCurrency(int amount)
+    {
+        this.currency += amount;
     }
     
     public void heal(int healAmount)
@@ -73,42 +103,48 @@ public class Player
         return this.respawnLocation;
     }
     
-    public void takeDamage(int damage)
+    public void takeDamage(int damage, TextArea textArea, TextField INPUT, World WORLD)
     {
         if(this.playerHealth - damage <= 0)
         {
-            System.out.println("Your Dead.");
-            this.playerHealth = 0;
             Player current = this;
-            long death = System.currentTimeMillis();
             Thread deathtimer = new Thread()
             {
                 
                 @Override
                 public void run() 
                 {
+                    long death = System.currentTimeMillis();
+                    textArea.appendText(String.format("Your Health %d/%d\n", 0,current.getPlayerMaxHealth()));
+                    textArea.appendText("You're Dead.\n");
                     int oldTime = 0;
+                    INPUT.setEditable(false);
                     while(System.currentTimeMillis() - death < 10000)
                     {
-                        if(oldTime != (int)((System.currentTimeMillis() - death)/1000))
+                        if(oldTime != 10 + (int)((death - System.currentTimeMillis())/1000))
                         {
-                            oldTime = (int)((System.currentTimeMillis() - death)/1000);
-                            System.out.printf("Respawn in %d second(s).\n", oldTime);
+                            oldTime = 10 + ((int)((death - System.currentTimeMillis())/1000));
+                            textArea.appendText(String.format("Respawn in %d second(s).\n", oldTime));
                         }
                     }
-                    System.out.printf("Welcome back to the world of the living %s.\n", current.getPlayerName());
+                    textArea.appendText(String.format("Welcome back to the world of the living %s.\n"
+                            + "Respawn back at spawn location.\n\n", current.getPlayerName()));
                     current.heal(current.getPlayerMaxHealth());
                     current.setPlayerLocation(current.getRespawnLocation());
-                    
+                    textArea.appendText(String.format("%s:\n\t%s\n%s\n",
+                        ((Grid)(WORLD.getGameGrids().get(current.getPlayerLocation()))).getLocationName(),
+                        ((Grid)(WORLD.getGameGrids().get(current.getPlayerLocation()))).getDetails(),
+                        ((Grid)(WORLD.getGameGrids().get(current.getPlayerLocation()))).searchArea()));
+                    INPUT.setEditable(true);
                 }
             };
             try
             {
                 deathtimer.start();
-                deathtimer.join();
+                this.playerHealth = 0;
             }catch(Exception e)
             {
-                System.out.println(e);
+                textArea.appendText(e + "\n");
                 while(true)
                 {
 
@@ -131,7 +167,7 @@ public class Player
             this.playerBuffs[indexBuff] -= Integer.parseInt(deBuff[indexBuff]);
     }
     
-    public void buff(int buffTime, long useTime, Item item)
+    public void buff(int buffTime, long useTime, Item item, TextArea textArea)
     {
         Thread bufftimer = new Thread()
         {
@@ -148,11 +184,11 @@ public class Player
                             (int)((buffTime2 - (System.currentTimeMillis() - useTime2))/1000) != lastMessage)
                     {
                         lastMessage = (int)((buffTime2 - (System.currentTimeMillis() - useTime2))/1000);
-                        System.out.printf("%s buff running out in %d seconds\n", item2.getItemName(), 
-                                lastMessage);
+                        textArea.appendText(String.format("%s buff running out in %d seconds\n", item2.getItemName(), 
+                                lastMessage));
                     }
                 }
-                System.out.printf("%s buff has ran out.\n", item2.getItemName());
+                textArea.appendText(String.format("%s buff has ran out.\n", item2.getItemName()));
                 if(item instanceof StackableConsumableItem)
                     deBuff(((StackableConsumableItem)item2).getItemEffect().split(":")[1].split(";"));
                 else
@@ -171,6 +207,24 @@ public class Player
             }
         }
         
+    }
+    
+    public void addToStats(String stats)
+    {
+        String [] removeStats = stats.split(";");
+        playerStats[0] += Integer.parseInt(removeStats[0]);
+        playerStats[1] += Integer.parseInt(removeStats[1]);
+        playerStats[2] += Integer.parseInt(removeStats[2]);
+        playerStats[3] += Integer.parseInt(removeStats[3]);
+    }
+    
+    public void removeFromStats(String stats)
+    {
+        String [] removeStats = stats.split(";");
+        playerStats[0] -= Integer.parseInt(removeStats[0]);
+        playerStats[1] -= Integer.parseInt(removeStats[1]);
+        playerStats[2] -= Integer.parseInt(removeStats[2]);
+        playerStats[3] -= Integer.parseInt(removeStats[3]);
     }
     
     public void setTarget(int targetID)
@@ -238,12 +292,12 @@ public class Player
         return this.questLog;
     }
     
-    public void checkEquipItems()
+    public void checkEquipItems(TextArea textArea)
     {
         for(int indexEquipment = 0; indexEquipment < this.playerEquipment.length; indexEquipment++)
         {
             if(!(playerEquipment[indexEquipment] == null))
-                System.out.printf(playerEquipment[indexEquipment].toString());
+                textArea.appendText(playerEquipment[indexEquipment].toString());
         }
     }
     
@@ -274,20 +328,21 @@ public class Player
             return false;
     }
     
-    public int sellItemToShop(String Item)
+    public int sellItemToShop(String Item, TextArea textArea)
     {
-        playerInventory.removeItemByName(Item);
+        playerInventory.removeItemByName(Item, this, textArea);
         return playerInventory.getItemIDByName(Item);
     }
     
     public String getStatus()
     {
         String outputString = String.format("Status Report:\n\tPlayer Level: %d\n\t"
-                + "Player XP: %d\n\t"
-                + "Player Health: %d/%d\n\tNumber of Active Quest: %d\n\tCurrent Buffs/Debuffs:\n\t\t"
+                + "Player XP: %d\n\tCurrent Coin: %d\n\t"
+                + "Player Health: %d/%d\n\tNumber of Active Quest: %d\n\tCurrent Stats:\n\t\t"
                 + "Strength:     %s\n\t\tDexterity:    %s\n\t\tConstitution: %s\n\t\tStamina:      %s\n\n", 
-                this.playerLevel, this.playerExperience, this.playerHealth, this.maxPlayerHealth, this.questLog.numberOfActiveQuest(),
-                this.playerBuffs[0], this.playerBuffs[1], this.playerBuffs[2], this.playerBuffs[3]);
+                this.playerLevel, this.playerExperience, this.currency, this.playerHealth, this.maxPlayerHealth, this.questLog.numberOfActiveQuest(),
+                this.playerBuffs[0] + this.playerStats[0], this.playerBuffs[1] + this.playerStats[1],
+                this.playerBuffs[2] + this.playerStats[2], this.playerBuffs[3] + this.playerStats[3]);
         return outputString;
     }
     
@@ -349,15 +404,15 @@ public class Player
     
     //Adds to the player's experience points and checks to see if the player has
     //gained a level.
-    public void gainExperience(int experience)
+    public void gainExperience(int experience, TextArea textArea)
     {
         playerExperience += experience;
         if(LEVELS[playerLevel + 1] <= playerExperience)
         {
             playerLevel++;
             usableSkillPoints++;
-            System.out.printf("You have gained a level.\n You are now level %d."
-                    + "\nYou have %d skill points to spend.\n", playerLevel, usableSkillPoints);
+            textArea.appendText(String.format("You have gained a level.\n You are now level %d."
+                    + "\nYou have %d skill points to spend.\n", playerLevel, usableSkillPoints));
         }
     }
 }
