@@ -1,3 +1,5 @@
+import javafx.scene.control.TextArea;
+
 public class NPC implements Lifeforms{
     
     private final int[] stats;
@@ -11,7 +13,7 @@ public class NPC implements Lifeforms{
     private final boolean shopKeeper;
     private final int[] linkedQuest;
     private final int location;
-    private final int[] equipment;
+    private final EquipableItem[] equipment;
     private final String dialogue;
     private final String[] questDialogue; 
     private int health;
@@ -19,7 +21,7 @@ public class NPC implements Lifeforms{
     private int level;
     
     public NPC(String fName, String lName, String description, int[] stats, String[] useableAction, Inventory inventory,
-    boolean shopKeeper, int[] linkedQuest, String[] questDialogue, int location, int[] equipment, String dialogue, int health, int mana,
+    boolean shopKeeper, int[] linkedQuest, String[] questDialogue, int location, EquipableItem[] equipment, String dialogue, int health, int mana,
     int level, int NPCID)
          {
              this.fName = fName;
@@ -78,6 +80,16 @@ public class NPC implements Lifeforms{
         return this.NPCID;
     }
     
+    public String getFirstName()
+    {
+        return this.fName;
+    }
+    
+    public String getLastName()
+    {
+        return this.lName;
+    }
+    
     @Override
     public int[] getStats() {
         return stats;
@@ -122,9 +134,9 @@ public class NPC implements Lifeforms{
             return false;
     }
     
-    public int buyItemFromShop(String Item)
+    public int buyItemFromShop(String Item, TextArea textArea)
     {
-        inventory.removeItemByName(Item);
+        inventory.removeItemByName(Item, textArea);
         return inventory.getItemIDByName(Item);
     }
     
@@ -133,7 +145,7 @@ public class NPC implements Lifeforms{
         return location;
     }
 
-    public int[] getEquipment() {
+    public EquipableItem[] getEquipment() {
         return equipment;
     }
 
