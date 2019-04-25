@@ -1,4 +1,4 @@
-import java.util.Map;
+import javafx.scene.control.TextArea;
 
 public class Creature 
 {
@@ -13,14 +13,15 @@ public class Creature
     private final int xp;
     private int health;
     private final int gridSize;
-    private final Map dropTable;
+    private final int[] dropTable;
+    private final int[] dropTableChance;
     private final int respawn;
     private long death;
     private boolean isdead;
     private final int maxHealth;
     
     public Creature(String name, int creatureID, int level, String details, int attack, int[] items,
-            int maxItems, int minItems, int xp, int health, int gridSize, Map dropTable,
+            int maxItems, int minItems, int xp, int health, int gridSize, int[] dropTable, int[] dropTableChance,
             int respawn, boolean isdead, long death)
     {
         this.name = name;
@@ -39,6 +40,7 @@ public class Creature
         this.respawn = respawn;
         this.death = death;
         this.isdead = isdead;
+        this.dropTableChance = dropTableChance;
     }
 
     public int getMaxHealth()
@@ -61,15 +63,49 @@ public class Creature
         this.items = items;
     }
 
-    public void setHealth(int health, Player currentPlayer, Grid where) 
+    public void setHealth(int health, Player currentPlayer, Grid where, World currentWorld, TextArea textArea) 
     {
         
-        if(health == 0)
+        if(health <= 0)
         {
             this.health = 0;
             this.isdead = true;
             this.death = System.currentTimeMillis();
-            System.out.printf("%s is dead.\n", this.name);
+            textArea.appendText(String.format("Creature Health %d/%d\n", 0, this.maxHealth));
+            textArea.appendText(String.format("%s is dead.\n", this.name));
+            textArea.appendText(String.format("You gained %d xp from killing a(n) %s\n",this.xp, this.name));
+            for(int indexDrops = 0; indexDrops < ((int)(Math.random()*((maxItems - minItems) + 1) + minItems)); indexDrops++)
+            {
+                int itemNumber = ((int)(Math.random()*(((dropTable.length - 1) - 0) + 1) + 0));
+                int itemChance = ((int)(Math.random()*100));
+                if(dropTableChance[itemNumber] < itemChance)
+                {
+                    Item drop = ((Item)(currentWorld.getGameItems().get(itemNumber)));
+                    if(!(drop instanceof StackableItem))
+                        where.addItem(drop);
+                    else
+                    {
+                        Item newItem;
+                        if(drop instanceof StackableConsumableItem)
+                        {
+                            StackableConsumableItem currentItem = ((StackableConsumableItem) (drop));
+                            newItem = new StackableConsumableItem(currentItem.getItemName(), currentItem.getValue()
+                                    , currentItem.getItemId(), currentItem.getDetails(), currentItem.maxStackAmount(), 
+                                    1,currentItem.getItemEffect(), currentItem.cooldownTimer(),currentItem.getRequirements()); 
+                        }
+                        else
+                        {
+                            StackableNonconsumableItem currentItem = ((StackableNonconsumableItem)(drop));
+                            newItem = new StackableNonconsumableItem(currentItem.getItemName(),currentItem.getValue(), 
+                                    currentItem.getItemId(), currentItem.getDetails(), currentItem.maxStackAmount(), 1);
+                        }   
+                        where.addItem(newItem);
+                    }
+                    
+                     textArea.appendText(String.format("Item Dropped %s\n", ((Item)(currentWorld.getGameItems().get(itemNumber))).getItemName()));
+                }
+                
+            }
             Creature current = this;
             Player you = currentPlayer;
             Grid currentGrid = where;
@@ -83,10 +119,7 @@ public class Creature
                     {
                         
                     }
-                    
-                    if(currentPlayer.getPlayerLocation() == currentGrid.getGridID())
-                        System.out.printf("%s has respawn\n", name);
-                    current.setHealth(current.getMaxHealth(), currentPlayer, currentGrid);
+                    current.setHealth(current.getMaxHealth(), currentPlayer, currentGrid, currentWorld, textArea);
                     current.setIsdead(false);
                 }
             };
@@ -156,11 +189,16 @@ public class Creature
         return gridSize;
     }
 
-    public Map getDropTable() 
+    public int[] getDrops() 
     {
         return dropTable;
     }
 
+    public int[] getDropsChance() 
+    {
+        return dropTableChance;
+    }
+    
     public int getRespawn() 
     {
         return respawn;
