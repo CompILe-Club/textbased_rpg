@@ -1,3 +1,5 @@
+import javafx.scene.control.TextArea;
+
 public class Quest {
     
     private final int questID;
@@ -52,8 +54,8 @@ public class Quest {
     }
     
     //This checks if there is another objective, and if there is, increments it.
-    public void nextObjective(){
-        System.out.printf("Current objective complete for: %s\n", this.name);
+    public void nextObjective(TextArea textArea){
+        textArea.appendText(String.format("Current objective complete for: %s\n", this.name));
         currentObjective++;
     }
     
@@ -110,7 +112,7 @@ public class Quest {
     }
     
     //This is triggered whenever something is done to advance the objective.
-    public void completeObjective(String event, World currentWorld){
+    public void completeObjective(String event, World currentWorld, TextArea textArea){
         boolean complete = false;
         String [] details = objectives[currentObjective].split(":");
         String [] currentEvent = event.split(":");
@@ -121,7 +123,7 @@ public class Quest {
         if (complete){
             ++counter;
             if (counter == targetNumber){
-                nextObjective();
+                nextObjective(textArea);
             }
         }
     }
